@@ -11,9 +11,9 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ================= CONFIGURATION =================
 # Telegram Bot Token (@BotFather se mila hua)
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8594216898:AAHKgNHUYEUIVKgiEapHNkz7kixTUruv_lI")
 # Render/Live app URL (Deploy hone ke baad mila URL yahan daalein ya environment variable set karein)
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://your-app-name.onrender.com")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "")
 
 # ================= TELEGRAM BOT LOGIC =================
 telegram_app = None
