@@ -6,11 +6,17 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+import httpx
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
+# ================= CONFIGURATION =================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://meesho-bot.onrender.com")
+RAW_URL = os.getenv("WEBAPP_URL", "https://meesho-bot.onrender.com")
+if "[" in RAW_URL and "(" in RAW_URL:
+    WEBAPP_URL = RAW_URL.split("(")[-1].replace(")", "").strip().rstrip("/")
+else:
+    WEBAPP_URL = RAW_URL.strip().rstrip("/")
 
 # ================= DATABASE / STATE =================
 db = {
@@ -36,6 +42,62 @@ db = {
     "cart": {"items": [], "total_quantity": 0, "effective_total": 0, "effective_online": 0, "address": None, "price_break_up": []},
     "orders": []
 }
+
+# ================= REAL MEESHO API CLIENT =================
+COMMON_HEADERS = {
+    "Host": "www.meesho.com",
+    "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Content-Type": "application/json",
+    "meesho-iso-country-code": "IN",
+    "origin": "https://www.meesho.com",
+    "sec-ch-ua-platform": '"Android"',
+    "sec-ch-ua-mobile": "?1"
+}
+
+async def send_meesho_real_otp(phone_number: str):
+    url = "https://www.meesho.com/api/v1/user/login/request-otp"
+    headers = dict(COMMON_HEADERS)
+    headers["referer"] = "https://www.meesho.com/auth?redirect=https%3A%2F%2Fwww.meesho.com%2Fmcheckout%2Fcart&source=cart-icon&screen=HP"
+    payload = {"phone_number": phone_number}
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.post(url, headers=headers, json=payload)
+            res_data = resp.json()
+            if resp.status_code == 200 and "data" in res_data:
+                return {
+                    "ok": True,
+                    "request_id": res_data["data"].get("request_id"),
+                    "instance_id": res_data["data"].get("instance_id")
+                }
+            return {"ok": False, "error": res_data.get("message", "Meesho rejected OTP request")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+async def verify_meesho_real_otp(phone_number: str, otp: str, request_id: str, instance_id: str):
+    url = "https://www.meesho.com/api/v1/user/login"
+    headers = dict(COMMON_HEADERS)
+    headers["referer"] = "https://www.meesho.com/auth/verify?redirect=https%3A%2F%2Fwww.meesho.com%2Fmcheckout%2Fcart&source=cart-icon&screen=HP"
+    payload = {
+        "request_id": request_id,
+        "instance_id": instance_id,
+        "phone_number": phone_number,
+        "otp": otp,
+        "login_type": "meesho_sms_auth"
+    }
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.post(url, headers=headers, json=payload)
+            res_data = resp.json()
+            if resp.status_code == 200 and res_data.get("status") is True:
+                user_id = res_data.get("user", {}).get("user_id", "")
+                cookies = {k: v for k, v in resp.cookies.items()}
+                return {"ok": True, "user_id": user_id, "cookies": cookies, "data": res_data}
+            return {"ok": False, "error": res_data.get("message", "Incorrect OTP or expired session")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
 # ================= TELEGRAM BOT LOGIC =================
 telegram_app = None
@@ -85,7 +147,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "add_account":
         text = "➕ *Add Account*\n━━━━━━━━━━━━━━━━━━━━\n\nHow would you like to link your Meesho account?"
         keyboard = [
-            [InlineKeyboardButton("📱 Login with Number", callback_data="login_number")],
+            [InlineKeyboardButton("📱 Login with Number (Real SMS)", callback_data="login_number")],
             [InlineKeyboardButton("📋 Import JSON session", callback_data="import_json")],
             [InlineKeyboardButton("❌ Cancel", callback_data="main_menu")]
         ]
@@ -127,7 +189,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text = "👤 *My Accounts*\n\nNo accounts linked yet. Tap below to add."
             keyboard = [[InlineKeyboardButton("➕ Add Account", callback_data="add_account")], [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]
         else:
-            acc_list = "\n".join([f"• *+91 {a['mobile']}* (Active)" for a in db["accounts"]])
+            acc_list = "\n".join([f"• *+91 {a['mobile']}* (ID: `{a.get('user_id', 'Active')}`)" for a in db["accounts"]])
             text = f"👤 *My Accounts*\n\n{acc_list}"
             keyboard = [[InlineKeyboardButton("➕ Add More", callback_data="add_account")], [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]
         await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
@@ -141,8 +203,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "how_offer_works":
         text = (
             "🎁 *How Meesho Offer Works*\n━━━━━━━━━━━━━━━━━━━━\n\n"
-            "1. Link your un-used or new Meesho accounts.\n"
-            "2. Open the shop to claim *100% Free / Discounted items*.\n"
+            "1. Link your Meesho account using live OTP.\n"
+            "2. Open shop to get 100% Free / Discounted catalog.\n"
             "3. Auto-applies maximum discounts on checkout.\n"
             "4. Free cash-on-delivery tracking included!"
         )
@@ -157,19 +219,52 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if state == "AWAITING_PHONE":
         if len(msg) >= 10 and msg[-10:].isdigit():
             phone = msg[-10:]
-            db["user_states"][user_id] = {"state": "AWAITING_OTP", "phone": phone}
-            await update.message.reply_text(f"📩 OTP has been requested for *+91 {phone}*.\n\nPlease enter the 6-digit OTP received via SMS:", parse_mode="Markdown")
+            await update.message.reply_text(f"⏳ Requesting live OTP from Meesho for *+91 {phone}*...", parse_mode="Markdown")
+            
+            otp_res = await send_meesho_real_otp(phone)
+            if otp_res["ok"]:
+                db["user_states"][user_id] = {
+                    "state": "AWAITING_OTP",
+                    "phone": phone,
+                    "request_id": otp_res["request_id"],
+                    "instance_id": otp_res["instance_id"]
+                }
+                await update.message.reply_text(
+                    f"📩 *Live SMS Sent!* 📲\n\nPlease enter the 6-digit OTP received from Meesho on *+91 {phone}*:",
+                    parse_mode="Markdown"
+                )
+            else:
+                await update.message.reply_text(f"⚠️ Meesho Error: {otp_res.get('error', 'Rate limited')}. Please try again later or use JSON import.")
+                db["user_states"].pop(user_id, None)
         else:
             await update.message.reply_text("❌ Invalid number. Please send a valid 10-digit number.")
 
     elif isinstance(state, dict) and state.get("state") == "AWAITING_OTP":
         phone = state.get("phone")
-        new_acc = {"id": len(db["accounts"]) + 1, "mobile": phone, "source": "otp", "order_placed": False, "xo_exp": 1795000000}
-        db["accounts"].append(new_acc)
-        db["active_id"] = new_acc["id"]
-        db["user_states"].pop(user_id, None)
-        text, reply_markup = get_main_menu()
-        await update.message.reply_text(f"✅ *Account +91 {phone} linked successfully!*\n\nYou can now open the shop.", parse_mode="Markdown", reply_markup=reply_markup)
+        request_id = state.get("request_id")
+        instance_id = state.get("instance_id")
+        otp = msg
+
+        await update.message.reply_text("⏳ Verifying OTP with Meesho servers...")
+        verify_res = await verify_meesho_real_otp(phone, otp, request_id, instance_id)
+
+        if verify_res["ok"]:
+            new_acc = {
+                "id": len(db["accounts"]) + 1,
+                "mobile": phone,
+                "user_id": verify_res.get("user_id"),
+                "cookies": verify_res.get("cookies"),
+                "source": "otp",
+                "order_placed": False,
+                "xo_exp": 1795000000
+            }
+            db["accounts"].append(new_acc)
+            db["active_id"] = new_acc["id"]
+            db["user_states"].pop(user_id, None)
+            text, reply_markup = get_main_menu()
+            await update.message.reply_text(f"🎉 *Success! Meesho Account +91 {phone} is linked & verified!*", parse_mode="Markdown", reply_markup=reply_markup)
+        else:
+            await update.message.reply_text(f"❌ *Verification Failed*: {verify_res.get('error', 'Invalid OTP')}\nPlease try entering the OTP again:")
 
     elif state == "AWAITING_REFER":
         db["referral_link"] = msg
@@ -323,4 +418,4 @@ async def api_fod():
 @app.get("/api/wallet/history")
 async def api_wallet_history():
     return {"balance": 0, "txns": []}
-    
+                   
