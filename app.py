@@ -7,49 +7,202 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# ================= CONFIGURATION =================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://meesho-bot.onrender.com")
+
+# ================= DATABASE / STATE =================
+db = {
+    "accounts": [],
+    "active_id": None,
+    "user_states": {},
+    "referral_link": "",
+    "addresses": [
+        {
+            "id": 101,
+            "name": "User Demo",
+            "mobile": "9876543210",
+            "pin": "110001",
+            "city": "New Delhi",
+            "state": "Delhi",
+            "address_line_1": "Connaught Place",
+            "address_line_2": "",
+            "landmark": "",
+            "address_type": "Home",
+            "pin_serviceable": True
+        }
+    ],
+    "cart": {"items": [], "total_quantity": 0, "effective_total": 0, "effective_online": 0, "address": None, "price_break_up": []},
+    "orders": []
+}
 
 # ================= TELEGRAM BOT LOGIC =================
 telegram_app = None
 
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_name = update.effective_user.first_name or "User"
+def get_main_menu():
+    acc_count = len(db["accounts"])
+    text = (
+        "🛍️ *PRIMES Meesho*\n"
+        "_Your personal Meesho shopping concierge_\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        "✨ *Service fee* — *FREE (₹0.00)*\n"
+        f"👤 *Accounts* · {f'{acc_count} linked' if acc_count > 0 else 'none linked yet — tap ➕ Add Account'}\n\n"
+        "Pick an option below to get started 👇"
+    )
     keyboard = [
+        [InlineKeyboardButton("🛍️ Open Shop", web_app=WebAppInfo(url=WEBAPP_URL))],
         [
-            InlineKeyboardButton(
-                text="🛍️ Open Meesho Store",
-                web_app=WebAppInfo(url=WEBAPP_URL if WEBAPP_URL else "https://google.com")
-            )
+            InlineKeyboardButton("➕ Add Account", callback_data="add_account"),
+            InlineKeyboardButton("👤 My Accounts", callback_data="my_accounts")
+        ],
+        [
+            InlineKeyboardButton("🔍 Check Number", callback_data="check_number"),
+            InlineKeyboardButton("🔗 Set Refer Link", callback_data="set_refer_link")
+        ],
+        [InlineKeyboardButton("🎁 How Offer Works", callback_data="how_offer_works")],
+        [
+            InlineKeyboardButton("🗂️ Manage Accounts", web_app=WebAppInfo(url=f"{WEBAPP_URL}#accounts")),
+            InlineKeyboardButton("🏷️ Check Price", web_app=WebAppInfo(url=f"{WEBAPP_URL}#check-price"))
         ]
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        f"Namaste {user_name}! 👋\n\nTap below to open the Meesho Store Mini App:",
-        reply_markup=reply_markup
-    )
+    return text, InlineKeyboardMarkup(keyboard)
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text, reply_markup = get_main_menu()
+    await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+
+async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    user_id = update.effective_user.id
+
+    if data == "main_menu":
+        text, reply_markup = get_main_menu()
+        await query.edit_message_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+
+    elif data == "add_account":
+        text = "➕ *Add Account*\n━━━━━━━━━━━━━━━━━━━━\n\nHow would you like to link your Meesho account?"
+        keyboard = [
+            [InlineKeyboardButton("📱 Login with Number", callback_data="login_number")],
+            [InlineKeyboardButton("📋 Import JSON session", callback_data="import_json")],
+            [InlineKeyboardButton("❌ Cancel", callback_data="main_menu")]
+        ]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    elif data == "login_number":
+        db["user_states"][user_id] = "AWAITING_PHONE"
+        text = "📱 *Enter Phone Number*\n\nPlease enter your 10-digit Meesho registered phone number:"
+        keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="main_menu")]]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    elif data == "import_json":
+        db["user_states"][user_id] = "AWAITING_JSON"
+        text = "📋 *Import JSON Session*\n\nPlease paste your Meesho session JSON below:"
+        keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="main_menu")]]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    elif data == "set_refer_link":
+        db["user_states"][user_id] = "AWAITING_REFER"
+        ref_text = f"Current Link: `{db['referral_link']}`\n\n" if db["referral_link"] else "You haven't saved a referral link yet.\n\n"
+        text = (
+            f"🔗 *Set Refer Link*\n\n"
+            f"{ref_text}"
+            "Paste your Meesho *referral link* once and I'll use it automatically every time you add an account:\n\n"
+            "_e.g. https://app.meesho.com/..._"
+        )
+        keyboard = [
+            [InlineKeyboardButton("🚫 I don't have a refer code", callback_data="no_refer_code")],
+            [InlineKeyboardButton("❌ Cancel", callback_data="main_menu")]
+        ]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    elif data == "no_refer_code":
+        db["referral_link"] = ""
+        await query.edit_message_text("✅ Referral skipped.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]))
+
+    elif data == "my_accounts":
+        if not db["accounts"]:
+            text = "👤 *My Accounts*\n\nNo accounts linked yet. Tap below to add."
+            keyboard = [[InlineKeyboardButton("➕ Add Account", callback_data="add_account")], [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]
+        else:
+            acc_list = "\n".join([f"• *+91 {a['mobile']}* (Active)" for a in db["accounts"]])
+            text = f"👤 *My Accounts*\n\n{acc_list}"
+            keyboard = [[InlineKeyboardButton("➕ Add More", callback_data="add_account")], [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    elif data == "check_number":
+        db["user_states"][user_id] = "AWAITING_CHECK"
+        text = "🔍 *Check Number Eligibility*\n\nEnter a 10-digit number to check first-order discount eligibility:"
+        keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="main_menu")]]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    elif data == "how_offer_works":
+        text = (
+            "🎁 *How Meesho Offer Works*\n━━━━━━━━━━━━━━━━━━━━\n\n"
+            "1. Link your un-used or new Meesho accounts.\n"
+            "2. Open the shop to claim *100% Free / Discounted items*.\n"
+            "3. Auto-applies maximum discounts on checkout.\n"
+            "4. Free cash-on-delivery tracking included!"
+        )
+        keyboard = [[InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]
+        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    msg = update.message.text.strip()
+    state = db["user_states"].get(user_id)
+
+    if state == "AWAITING_PHONE":
+        if len(msg) >= 10 and msg[-10:].isdigit():
+            phone = msg[-10:]
+            db["user_states"][user_id] = {"state": "AWAITING_OTP", "phone": phone}
+            await update.message.reply_text(f"📩 OTP has been requested for *+91 {phone}*.\n\nPlease enter the 6-digit OTP received via SMS:", parse_mode="Markdown")
+        else:
+            await update.message.reply_text("❌ Invalid number. Please send a valid 10-digit number.")
+
+    elif isinstance(state, dict) and state.get("state") == "AWAITING_OTP":
+        phone = state.get("phone")
+        new_acc = {"id": len(db["accounts"]) + 1, "mobile": phone, "source": "otp", "order_placed": False, "xo_exp": 1795000000}
+        db["accounts"].append(new_acc)
+        db["active_id"] = new_acc["id"]
+        db["user_states"].pop(user_id, None)
+        text, reply_markup = get_main_menu()
+        await update.message.reply_text(f"✅ *Account +91 {phone} linked successfully!*\n\nYou can now open the shop.", parse_mode="Markdown", reply_markup=reply_markup)
+
+    elif state == "AWAITING_REFER":
+        db["referral_link"] = msg
+        db["user_states"].pop(user_id, None)
+        await update.message.reply_text("✅ *Referral link saved successfully!*", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]))
+
+    elif state == "AWAITING_CHECK":
+        db["user_states"].pop(user_id, None)
+        await update.message.reply_text(f"✅ *Number {msg} is ELIGIBLE for 1st order discount!*", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("➕ Add This Account", callback_data="add_account")], [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]))
+
+    elif state == "AWAITING_JSON":
+        new_acc = {"id": len(db["accounts"]) + 1, "mobile": "SessionUser", "source": "json", "order_placed": False, "xo_exp": 1795000000}
+        db["accounts"].append(new_acc)
+        db["user_states"].pop(user_id, None)
+        await update.message.reply_text("✅ *JSON Session imported successfully!*", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]]))
 
 async def run_bot_background():
     global telegram_app
     if not BOT_TOKEN:
-        print("⚠️ No BOT_TOKEN found. Web server is running without bot polling.")
         return
     try:
         telegram_app = Application.builder().token(BOT_TOKEN).connect_timeout(30).read_timeout(30).build()
         telegram_app.add_handler(CommandHandler("start", start_command))
+        telegram_app.add_handler(CallbackQueryHandler(callback_handler))
+        telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
         await telegram_app.initialize()
         await telegram_app.start()
         await telegram_app.updater.start_polling()
-        print("✅ Telegram Bot started successfully in background!")
     except Exception as e:
-        print(f"⚠️ Telegram Bot polling error (Server is still alive): {e}")
+        print(f"Bot error: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Bot ko non-blocking background task me start karein
     bot_task = asyncio.create_task(run_bot_background())
     yield
     if telegram_app and telegram_app.updater and telegram_app.updater.running:
@@ -60,16 +213,8 @@ async def lifespan(app: FastAPI):
 
 # ================= FASTAPI APP =================
 app = FastAPI(title="Meesho Mini App Server", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Static files folder mapping
 app.mount("/UnknownGuy_js", StaticFiles(directory="public/UnknownGuy_js"), name="js")
 app.mount("/UnknownGuy_css", StaticFiles(directory="public/UnknownGuy_css"), name="css")
 
@@ -77,66 +222,9 @@ app.mount("/UnknownGuy_css", StaticFiles(directory="public/UnknownGuy_css"), nam
 async def serve_index():
     return FileResponse("public/index.html")
 
-# In-Memory Database
-db = {
-    "accounts": [
-        {"id": 1, "mobile": "9876543210", "source": "otp", "order_placed": True, "xo_exp": 1795000000},
-        {"id": 2, "mobile": "9123456780", "source": "otp", "order_placed": False, "xo_exp": 1795000000}
-    ],
-    "active_id": 1,
-    "balance": 1500,
-    "fee": 0,
-    "cart": {
-        "items": [],
-        "total_quantity": 0,
-        "effective_total": 0,
-        "effective_online": 0,
-        "address": None,
-        "price_break_up": []
-    },
-    "addresses": [
-        {
-            "id": 101,
-            "name": "Alex Sharma",
-            "mobile": "9876543210",
-            "pin": "110001",
-            "city": "New Delhi",
-            "state": "Delhi",
-            "address_line_1": "Flat 402, Block B, Green Heights",
-            "address_line_2": "Connaught Place",
-            "landmark": "Near Metro Station",
-            "address_type": "Home",
-            "pin_serviceable": True
-        }
-    ],
-    "orders": [
-        {
-            "order_num": "OD98234120",
-            "sub_order_num": "SO481023",
-            "status_id": "SHIPPED",
-            "status_text": "Shipped",
-            "status_color": "#2F6BFF",
-            "delivery_date": "2026-08-25",
-            "updated_date": "2026-08-20",
-            "quantity": 1,
-            "size": "L",
-            "carrier_name": "Shadowfax",
-            "awb": "SF98124012IN",
-            "tracking_url": "https://www.shadowfax.in",
-            "image": "https://images.meesho.com/images/products/312019481/1_512.jpg"
-        }
-    ]
-}
-
-# --- APIS ---
 @app.get("/api/bootstrap")
 async def api_bootstrap():
-    return {
-        "accounts": db["accounts"],
-        "active_id": db["active_id"],
-        "balance": db["balance"],
-        "per_order_price": db["fee"]
-    }
+    return {"accounts": db["accounts"], "active_id": db["active_id"], "balance": 0, "per_order_price": 0}
 
 @app.post("/api/accounts/select")
 async def api_accounts_select(data: dict):
@@ -145,16 +233,11 @@ async def api_accounts_select(data: dict):
 
 @app.get("/api/accounts/order_status")
 async def api_accounts_order_status():
-    statuses = {str(a["id"]): a["order_placed"] for a in db["accounts"]}
-    return {"statuses": statuses}
+    return {"statuses": {str(a["id"]): a["order_placed"] for a in db["accounts"]}}
 
 @app.get("/api/accounts/list")
 async def api_accounts_list():
     return {"accounts": db["accounts"]}
-
-@app.post("/api/accounts/refresh")
-async def api_accounts_refresh(data: dict):
-    return {"ok": True, "message": "Session refreshed successfully"}
 
 @app.post("/api/search")
 async def api_search(data: dict):
@@ -162,36 +245,17 @@ async def api_search(data: dict):
         {
             "product_id": 1001,
             "name": "Men Premium Slim Fit Casual Cotton Shirt",
-            "price": 399,
+            "price": 0,
             "original_price": 899,
-            "discount_text": "55% OFF",
-            "rating": 4.3,
-            "rating_count": "12,400",
+            "discount_text": "100% OFF (FREE)",
+            "rating": 4.5,
+            "rating_count": "14,200",
             "supplier_name": "Fashion Vibe",
             "mall_verified": True,
             "image": "https://images.meesho.com/images/products/312019481/1_512.jpg",
             "images": ["https://images.meesho.com/images/products/312019481/1_512.jpg"],
-            "sizes": [
-                {"variation_id": 1, "name": "M"},
-                {"variation_id": 2, "name": "L"},
-                {"variation_id": 3, "name": "XL"}
-            ],
-            "tags": ["Fast Dispatch", "Free Delivery"]
-        },
-        {
-            "product_id": 1002,
-            "name": "Embroidered Semi-Stitched Anarkali Kurti & Dupatta",
-            "price": 549,
-            "original_price": 1299,
-            "discount_text": "57% OFF",
-            "rating": 4.6,
-            "rating_count": "24,800",
-            "supplier_name": "Ethnic Hub",
-            "mall_verified": True,
-            "image": "https://images.meesho.com/images/products/298412891/1_512.jpg",
-            "images": ["https://images.meesho.com/images/products/298412891/1_512.jpg"],
-            "sizes": [{"variation_id": 1, "name": "Free Size"}],
-            "tags": ["Trending", "Lowest Price"]
+            "sizes": [{"variation_id": 1, "name": "M"}, {"variation_id": 2, "name": "L"}],
+            "tags": ["Free Order", "Fast Dispatch"]
         }
     ]
     return {"catalogs": catalogs, "cursor": None, "corrected_term": None}
@@ -201,213 +265,62 @@ async def api_product_detail(product_id: int):
     return {
         "product_id": product_id,
         "name": "Men Premium Slim Fit Casual Cotton Shirt",
-        "price": 399,
+        "price": 0,
         "mrp": 899,
         "brand": "Roadster",
         "supplier_name": "Fashion Vibe",
-        "supplier_rating": 4.4,
+        "supplier_rating": 4.5,
         "supplier_rating_count": 8900,
         "mall_verified": True,
         "in_stock": True,
         "images": ["https://images.meesho.com/images/products/312019481/1_512.jpg"],
-        "sizes": [
-            {"variation_id": 1, "name": "M"},
-            {"variation_id": 2, "name": "L"},
-            {"variation_id": 3, "name": "XL"}
-        ],
-        "highlights": [
-            {"name": "Fabric", "value": "100% Pure Cotton"},
-            {"name": "Pattern", "value": "Solid"},
-            {"name": "Sleeve", "value": "Full Sleeve"},
-            {"name": "Fit", "value": "Slim Fit"}
-        ],
-        "description": "Premium breathable fabric suitable for casual daily wear and office outfits.",
-        "review_sentiment": [
-            {"label": "Fabric Quality", "positive_pct": 89, "total": 4200},
-            {"label": "Fitting & Comfort", "positive_pct": 92, "total": 3800}
-        ]
+        "sizes": [{"variation_id": 1, "name": "M"}, {"variation_id": 2, "name": "L"}],
+        "highlights": [{"name": "Fabric", "value": "100% Cotton"}],
+        "description": "Free first order loot product.",
+        "review_sentiment": [{"label": "Fabric Quality", "positive_pct": 94, "total": 4200}]
     }
 
 @app.post("/api/variation")
 async def api_variation(data: dict):
-    return {
-        "price": 399,
-        "mrp": 899,
-        "discount": "55% OFF",
-        "in_stock": True,
-        "cod_available": True,
-        "shipping": {"charges": 0, "estimated_delivery": {"title": "Fast Delivery", "date": "Within 4-5 Days"}}
-    }
+    return {"price": 0, "mrp": 899, "discount": "100% OFF", "in_stock": True, "cod_available": True, "shipping": {"charges": 0, "estimated_delivery": {"title": "Free Delivery", "date": "Within 3 Days"}}}
 
 @app.get("/api/cart")
 async def api_get_cart():
-    items = db["cart"]["items"]
-    subtotal = sum(i["price"] * i["quantity"] for i in items)
-    db["cart"]["effective_total"] = subtotal
-    db["cart"]["effective_online"] = max(0, subtotal - 25) if subtotal > 0 else 0
-    db["cart"]["total_quantity"] = sum(i["quantity"] for i in items)
-    db["cart"]["price_break_up"] = [
-        {"type": "Item Total", "display_name": "Items Total", "value": subtotal},
-        {"type": "Delivery Charges", "display_name": "Delivery", "value": 0}
-    ]
-    if not db["cart"]["address"] and db["addresses"]:
-        db["cart"]["address"] = db["addresses"][0]
     return db["cart"]
 
 @app.post("/api/cart/add")
 async def api_cart_add(data: dict):
-    item = {
-        "identifier": f"{data.get('product_id')}_{data.get('variation_id')}",
-        "product_id": data.get("product_id"),
-        "supplier_id": data.get("supplier_id"),
-        "name": "Men Premium Slim Fit Casual Cotton Shirt",
-        "price": 399,
-        "mrp": 899,
-        "quantity": data.get("quantity", 1),
-        "variation": data.get("variation", "M"),
-        "variation_id": data.get("variation_id"),
-        "image": "https://images.meesho.com/images/products/312019481/1_512.jpg"
-    }
-    db["cart"]["items"].append(item)
-    total_qty = sum(i["quantity"] for i in db["cart"]["items"])
-    total_val = sum(i["price"] * i["quantity"] for i in db["cart"]["items"])
-    return {
-        "success": True,
-        "result": {
-            "effective_total": total_val,
-            "total_quantity": total_qty
-        }
-    }
-
-@app.post("/api/cart/update")
-async def api_cart_update(data: dict):
-    return await api_get_cart()
-
-@app.post("/api/cart/location")
-async def api_cart_location(data: dict):
-    addr_id = data.get("address_id")
-    addr = next((a for a in db["addresses"] if a["id"] == addr_id), None)
-    if addr:
-        db["cart"]["address"] = addr
-    return db["cart"]
+    return {"success": True, "result": {"effective_total": 0, "total_quantity": 1}}
 
 @app.get("/api/addresses")
 async def api_get_addresses():
-    return {"addresses": db["addresses"], "default": db["addresses"][0] if db["addresses"] else None}
-
-@app.post("/api/addresses/create")
-async def api_addresses_create(data: dict):
-    new_addr = {
-        "id": len(db["addresses"]) + 101,
-        "name": data.get("name"),
-        "mobile": data.get("mobile"),
-        "pin": data.get("pin"),
-        "city": data.get("city"),
-        "state": data.get("state"),
-        "address_line_1": data.get("address_line_1"),
-        "address_line_2": data.get("address_line_2"),
-        "landmark": data.get("landmark"),
-        "address_type": data.get("address_type", "Home"),
-        "pin_serviceable": True
-    }
-    db["addresses"].append(new_addr)
-    return {"ok": True, "address": new_addr}
+    return {"addresses": db["addresses"], "default": db["addresses"][0]}
 
 @app.get("/api/geocode")
 async def api_geocode(q: Optional[str] = None, lat: Optional[float] = None, lng: Optional[float] = None):
-    return {
-        "results": [
-            {
-                "formatted": "Connaught Place, Central Delhi, Delhi - 110001",
-                "city": "New Delhi",
-                "state": "Delhi",
-                "area": "Connaught Place",
-                "pin": "110001",
-                "lat": 28.6315,
-                "lng": 77.2167
-            }
-        ]
-    }
+    return {"results": [{"formatted": "Connaught Place, New Delhi - 110001", "city": "New Delhi", "state": "Delhi", "area": "Connaught Place", "pin": "110001", "lat": 28.6315, "lng": 77.2167}]}
 
 @app.post("/api/order/prices")
 async def api_order_prices(data: dict):
-    subtotal = db["cart"]["effective_total"]
-    return {"cod": subtotal, "online": max(0, subtotal - 25)}
+    return {"cod": 0, "online": 0}
 
 @app.post("/api/order/place_cod")
 async def api_place_cod(data: dict):
-    order_num = f"OD{asyncio.get_event_loop().time():.0f}"
-    new_order = {
-        "order_num": order_num,
-        "sub_order_num": f"SO{order_num[-6:]}",
-        "status_id": "ORDERED",
-        "status_text": "Order Confirmed",
-        "status_color": "#0EAE6E",
-        "delivery_date": "2026-08-26",
-        "updated_date": "2026-08-17",
-        "quantity": db["cart"]["total_quantity"] or 1,
-        "size": "L",
-        "carrier_name": "Shadowfax Courier",
-        "awb": f"SF{order_num[-8:]}IN",
-        "tracking_url": "https://www.shadowfax.in",
-        "image": db["cart"]["items"][0]["image"] if db["cart"]["items"] else "https://images.meesho.com/images/products/312019481/1_512.jpg"
-    }
-    db["orders"].insert(0, new_order)
-    db["cart"]["items"] = []
-    return {"ok": True, "order_num": order_num, "total": db["cart"]["effective_total"], "message": "COD Order Placed Successfully!"}
+    return {"ok": True, "order_num": "OD98234120", "total": 0, "message": "Free Order Placed Successfully!"}
 
 @app.get("/api/orders")
 async def api_get_orders():
     return {"orders": db["orders"], "filters": [{"id": 0, "name": "All"}], "cursor": None}
 
-@app.post("/api/orders/detail")
-async def api_order_detail(data: dict):
-    order_num = data.get("order_num")
-    order = next((o for o in db["orders"] if o["order_num"] == order_num), db["orders"][0])
-    return {
-        "order_num": order["order_num"],
-        "sub_order_num": order["sub_order_num"],
-        "status_id": order["status_id"],
-        "product": {
-            "name": "Men Premium Slim Fit Casual Cotton Shirt",
-            "size": order.get("size", "L"),
-            "images": [order["image"]]
-        },
-        "tracking": {
-            "title": order["status_text"],
-            "delivery_by": order["delivery_date"]
-        },
-        "milestones": [
-            {"status": "Ordered", "done": True, "date": "17 Aug"},
-            {"status": "Packed", "done": True, "date": "18 Aug"},
-            {"status": "Shipped", "done": True, "is_current": True, "current_text": "In Transit", "date": "20 Aug"},
-            {"status": "Out for delivery", "done": False},
-            {"status": "Delivered", "done": False}
-        ],
-        "shipment": {
-            "carrier_name": order.get("carrier_name", "Shadowfax"),
-            "awb": order.get("awb", "SF98124012IN"),
-            "tracking_url": order.get("tracking_url", "https://www.shadowfax.in")
-        },
-        "address": db["addresses"][0] if db["addresses"] else None,
-        "payment": {"mode": "Cash on Delivery", "total": 399}
-    }
-
 @app.get("/api/referral/stats")
 async def api_referral_stats():
-    return {"done": 4, "pending": 2, "rejected": 0, "earned": 600, "link": f"https://t.me/share/url?url={WEBAPP_URL}", "has_link": True}
+    return {"done": 5, "pending": 0, "rejected": 0, "earned": 0, "link": db["referral_link"], "has_link": bool(db["referral_link"])}
 
 @app.get("/api/account/fod")
 async def api_fod():
-    return {"offer": {"title": "FLAT ₹100 OFF", "text": "Instant Discount", "subtitle": "Valid on 1st Order"}}
+    return {"offer": {"title": "FREE ORDER", "text": "100% Free", "subtitle": "First Order Discount"}}
 
 @app.get("/api/wallet/history")
 async def api_wallet_history():
-    return {
-        "balance": db["balance"],
-        "txns": [
-            {"amount": 500, "kind": "Recharge", "at": "2026-08-15 14:30", "note": "UPI Add Funds"},
-            {"amount": -399, "kind": "Order", "at": "2026-08-17 11:20", "note": "Order #OD98234120"}
-        ]
-}
+    return {"balance": 0, "txns": []}
     
