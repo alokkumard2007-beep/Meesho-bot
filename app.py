@@ -10,9 +10,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppI
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ================= CONFIGURATION =================
-# Telegram Bot Token (@BotFather se mila hua)
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8594216898:AAHKgNHUYEUIVKgiEapHNkz7kixTUruv_lI")
-# Render/Live app URL (Deploy hone ke baad mila URL yahan daalein ya environment variable set karein)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "")
 
 # ================= TELEGRAM BOT LOGIC =================
@@ -24,7 +22,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [
             InlineKeyboardButton(
                 text="🛍️ Open Meesho Store",
-                web_app=WebAppInfo(url=WEBAPP_URL)
+                web_app=WebAppInfo(url=WEBAPP_URL if WEBAPP_URL else "https://google.com")
             )
         ]
     ]
@@ -34,22 +32,31 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# Lifespan context manager jo FastAPI ke sath Bot ko background me start karega
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+async def run_bot_background():
     global telegram_app
-    if BOT_TOKEN and BOT_TOKEN != "YOUR_BOT_TOKEN_HERE":
-        telegram_app = Application.builder().token(BOT_TOKEN).build()
+    if not BOT_TOKEN:
+        print("⚠️ No BOT_TOKEN found. Web server is running without bot polling.")
+        return
+    try:
+        telegram_app = Application.builder().token(BOT_TOKEN).connect_timeout(30).read_timeout(30).build()
         telegram_app.add_handler(CommandHandler("start", start_command))
         await telegram_app.initialize()
         await telegram_app.start()
         await telegram_app.updater.start_polling()
-        print(" Telegram Bot started successfully!")
+        print("✅ Telegram Bot started successfully in background!")
+    except Exception as e:
+        print(f"⚠️ Telegram Bot polling error (Server is still alive): {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Bot ko non-blocking background task me start karein
+    bot_task = asyncio.create_task(run_bot_background())
     yield
-    if telegram_app:
+    if telegram_app and telegram_app.updater and telegram_app.updater.running:
         await telegram_app.updater.stop()
         await telegram_app.stop()
         await telegram_app.shutdown()
+    bot_task.cancel()
 
 # ================= FASTAPI APP =================
 app = FastAPI(title="Meesho Mini App Server", lifespan=lifespan)
@@ -70,7 +77,7 @@ app.mount("/UnknownGuy_css", StaticFiles(directory="public/UnknownGuy_css"), nam
 async def serve_index():
     return FileResponse("public/index.html")
 
-# In-Memory Database (Demo state)
+# In-Memory Database
 db = {
     "accounts": [
         {"id": 1, "mobile": "9876543210", "source": "otp", "order_placed": True, "xo_exp": 1795000000},
@@ -121,7 +128,7 @@ db = {
     ]
 }
 
-# --- 1. BOOTSTRAP & ACCOUNTS ---
+# --- APIS ---
 @app.get("/api/bootstrap")
 async def api_bootstrap():
     return {
@@ -149,7 +156,6 @@ async def api_accounts_list():
 async def api_accounts_refresh(data: dict):
     return {"ok": True, "message": "Session refreshed successfully"}
 
-# --- 2. SEARCH & PRODUCTS ---
 @app.post("/api/search")
 async def api_search(data: dict):
     catalogs = [
@@ -233,7 +239,6 @@ async def api_variation(data: dict):
         "shipping": {"charges": 0, "estimated_delivery": {"title": "Fast Delivery", "date": "Within 4-5 Days"}}
     }
 
-# --- 3. CART & CHECKOUT ---
 @app.get("/api/cart")
 async def api_get_cart():
     items = db["cart"]["items"]
@@ -286,7 +291,6 @@ async def api_cart_location(data: dict):
         db["cart"]["address"] = addr
     return db["cart"]
 
-# --- 4. ADDRESSES & GEOCODE ---
 @app.get("/api/addresses")
 async def api_get_addresses():
     return {"addresses": db["addresses"], "default": db["addresses"][0] if db["addresses"] else None}
@@ -325,7 +329,6 @@ async def api_geocode(q: Optional[str] = None, lat: Optional[float] = None, lng:
         ]
     }
 
-# --- 5. ORDERS & PAYMENTS ---
 @app.post("/api/order/prices")
 async def api_order_prices(data: dict):
     subtotal = db["cart"]["effective_total"]
@@ -406,4 +409,5 @@ async def api_wallet_history():
             {"amount": 500, "kind": "Recharge", "at": "2026-08-15 14:30", "note": "UPI Add Funds"},
             {"amount": -399, "kind": "Order", "at": "2026-08-17 11:20", "note": "Order #OD98234120"}
         ]
-    }
+}
+    
