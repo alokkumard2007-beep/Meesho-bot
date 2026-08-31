@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Meesho Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://api.qrserver.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --m:#F43397;--m-d:#D91E7A;--m-dd:#B01560;
+  --m-bg:rgba(244,51,151,.09);--m-bg2:rgba(244,51,151,.16);
+  --grad:linear-gradient(135deg,#F94BA8 0%,#C21876 100%);--grad-glow:rgba(176,21,96,.32);
+  --white:#FFFFFF;--surface:#FFFFFF;--surface2:#F8FAFC;--bg:#F5F6F8;
+  --text:#0F172A;--text2:#64748B;--text3:#94A3B8;--text4:#CBD5E1;
+  --border:rgba(15,23,42,.07);--border2:rgba(15,23,42,.13);
+  --red:#DC2626;--red-bg:rgba(220,38,38,.08);
+  --orange:#D97706;--orange-bg:rgba(217,119,6,.09);
+  --green:#16A34A;--green-bg:rgba(22,163,74,.09);
+  --radius:16px;--radius-sm:12px;--radius-xs:9px;
+  --shadow-xs:0 1px 2px rgba(0,0,0,.04);
+  --shadow-sm:0 1px 4px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+  --shadow:0 2px 8px rgba(0,0,0,.06),0 8px 32px rgba(0,0,0,.07);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 16px 48px rgba(0,0,0,.10);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+#app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;max-width:480px;margin:0 auto;background:var(--bg)}
+/* Safety net: a bare inline SVG never balloons to full width */
+svg{max-width:100%;max-height:100%}
+.card-title>svg{width:18px;height:18px;stroke:var(--m-d);fill:none;stroke-width:2;flex-shrink:0}
+
+/* Header */
+#header{background:var(--grad);padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;gap:12px;flex-shrink:0;box-shadow:0 2px 16px rgba(176,21,96,.35)}
+#hdr-icon{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#hdr-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#hdr-text{line-height:1.25;flex:1;min-width:0}
+#hdr-name{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hdr-sub{font-size:10px;color:rgba(255,255,255,.72);font-weight:600;letter-spacing:.7px;text-transform:uppercase;margin-top:2px;white-space:nowrap}
+#hdr-chip{background:rgba(255,255,255,.92);border-radius:100px;padding:6px 13px;font-size:12.5px;font-weight:800;color:var(--m-d);display:flex;align-items:center;gap:5px;flex-shrink:0;letter-spacing:-.3px}
+#hdr-chip svg{width:13px;height:13px;stroke:var(--m-d);fill:none;stroke-width:2.4}
+
+/* Pages */
+#pages{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative}
+.page{display:none;padding:14px 0 40px;animation:fade .28s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Cards */
+.card{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border);margin:0 16px 10px}
+.card-title{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:14px}
+.card-title .ct-ic{width:32px;height:32px;border-radius:9px;background:var(--m-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-title .ct-ic svg{width:16px;height:16px;stroke:var(--m-d);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card-title .ct-sub{font-size:11px;font-weight:600;color:var(--text3);margin-left:auto;letter-spacing:0}
+
+/* Section title (page-level) */
+.sec-title{padding:2px 16px 12px;font-size:20px;font-weight:800;letter-spacing:-.4px}
+.acc-sec-hd{display:flex;align-items:baseline;justify-content:space-between;padding:18px 16px 10px}
+.acc-sec-t{font-size:15px;font-weight:800;letter-spacing:-.2px;color:var(--text1)}
+.acc-sec-c{font-size:12px;font-weight:600;color:var(--text3)}
+/* full-page order detail */
+.od-hd{display:flex;align-items:center;gap:12px;padding:16px 16px 6px}
+.od-back{width:38px;height:38px;border-radius:11px;background:var(--surface2);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s}
+.od-back:active{background:var(--m-bg)}
+.od-back svg{width:20px;height:20px;stroke:var(--text1)}
+.od-title{font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.2px}
+.od-body{padding:8px 16px 28px}
+.od-body .card{margin:0 0 12px;border-radius:16px}
+/* hero product card */
+.od-hero{display:flex;gap:13px;align-items:center;padding:14px;background:linear-gradient(135deg,var(--m-bg) 0%,#fff 90%);border:1.5px solid var(--m-bg2)}
+.od-hero-img{width:64px;height:64px;border-radius:13px;object-fit:cover;flex-shrink:0;background:#F1F5F9}
+.od-hero-nm{font-weight:800;font-size:14.5px;line-height:1.3;color:var(--text1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.od-hero-sub{font-size:12px;color:var(--text2);font-weight:600;margin-top:4px}
+/* status banner */
+.od-status{display:flex;align-items:center;gap:10px;padding:13px 15px}
+.od-status-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.od-status-ic svg{width:19px;height:19px}
+.od-status-tx{flex:1;min-width:0}
+.od-status-t{font-size:14px;font-weight:800;color:var(--text1)}
+.od-status-s{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px}
+/* action buttons area */
+.od-actions{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.sec-title span{display:block;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.2px;margin-top:2px}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;width:100%;border:none;cursor:pointer;transition:transform .12s,background .15s;letter-spacing:-.1px;font-family:inherit}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn:active{transform:scale(.98)}
+.btn-m{background:var(--m);color:#fff;box-shadow:0 2px 8px rgba(217,30,122,.22)}
+.btn-m:active{background:var(--m-d)}
+.btn-outline{background:#fff;color:var(--m-d);border:1.5px solid var(--m)}
+.btn-outline:active{background:var(--m-bg)}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1.5px solid #E2E8F0}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2)}
+.btn-sm{height:36px;width:auto;padding:0 16px;border-radius:9px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:default}
+.btn+.btn{margin-top:9px}
+.btn.loading{color:transparent!important;pointer-events:none;position:relative}
+.btn.loading::after{content:"";position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+.btn-outline.loading::after,.btn-ghost.loading::after{border-color:var(--m-bg2);border-top-color:var(--m)}
+.btn-row{display:flex;gap:9px}.btn-row .btn{margin-top:0}
+
+/* Inputs */
+.flbl{display:block;font-size:10.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px 2px}
+.scanwrap.open{max-height:2000px !important}
+.tier-row{display:flex;gap:6px}
+.tier-opt{flex:1;text-align:center;background:#fff;border:1.5px solid #E2E8F0;border-radius:var(--radius-xs);padding:11px 4px;font-size:13.5px;font-weight:800;color:var(--text2);cursor:pointer;transition:all .15s;user-select:none}
+.tier-opt .ts{display:block;font-size:9px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.tier-opt.sel{border-color:var(--m-d);background:var(--m-bg);color:var(--m-d)}
+.tier-opt.sel .ts{color:var(--m-d)}
+.inp{width:100%;background:#fff;border:1.5px solid #E2E8F0;border-radius:var(--radius-xs);padding:12px 14px;font-size:14px;font-weight:600;color:var(--text);font-family:inherit;transition:border .15s,box-shadow .15s,background .15s;outline:none}
+.inp::placeholder{color:var(--text3);opacity:.75}
+.inp.otp{text-align:center;font-size:22px;letter-spacing:8px;font-weight:800;padding-left:22px}
+.inp.otp::placeholder{letter-spacing:normal;font-size:14px;font-weight:500;padding:0}
+.inp:focus{border-color:var(--m);background:#fff;box-shadow:0 0 0 3px var(--m-bg)}
+/* keyboard/switch-access focus ring on interactive elements */
+.btn:focus-visible,.acc-card:focus-visible,.pay-opt:focus-visible,.var-chip:focus-visible,.nav-btn:focus-visible,.acc-act:focus-visible,.acc-del:focus-visible,.qty-btn:focus-visible{outline:2px solid var(--m);outline-offset:2px}
+/* stop the yellow/blue autofill repaint breaking the #fff input theme */
+.inp:-webkit-autofill,.inp:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 40px #fff inset;box-shadow:0 0 0 40px #fff inset;-webkit-text-fill-color:var(--text)}
+/* bigger tap targets (>=44px) on small controls without changing their visual size */
+.cart-del,.qty-btn,.acc-act,.acc-del,.sheet-x{position:relative}
+.cart-del::after,.qty-btn::after,.acc-act::after,.acc-del::after,.sheet-x::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px}
+textarea.inp{min-height:70px;resize:none}
+.field{margin-bottom:13px}
+.frow{display:flex;gap:10px;margin-bottom:13px}.frow .field{flex:1;margin-bottom:0}
+
+/* Pills / chips */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:-.1px}
+.pill-green{background:rgba(22,163,74,.14);color:var(--green)}
+.pill-red{background:var(--red-bg);color:var(--red)}
+.pill-orange{background:var(--orange-bg);color:var(--orange)}
+.pill-gray{background:var(--surface2);color:var(--text2)}
+.pill-m{background:var(--m-bg2);color:var(--m-d)}
+
+/* Info rows */
+.irow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border)}
+.irow:last-child{border-bottom:none}
+.irow .k{font-size:12.5px;color:var(--text2);font-weight:500}
+.irow .v{font-size:13px;color:var(--text);font-weight:700;text-align:right}
+.irow .v.disc{color:var(--green)}
+.irow.total{border-top:1.5px solid var(--border);border-bottom:none;margin-top:4px;padding-top:11px}
+.irow.total .k{font-weight:700;color:var(--text)}.irow.total .v{font-size:16px;font-weight:800}
+
+/* ── Checkout: bill details ── */
+.co-item{display:flex;gap:11px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border)}
+.co-item:last-of-type{border-bottom:none}
+.co-thumb{width:44px;height:44px;border-radius:10px;background:var(--surface2);overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
+.co-thumb img{width:100%;height:100%;object-fit:cover}
+.co-thumb svg{width:20px;height:20px;stroke:var(--text3);fill:none;stroke-width:1.8}
+.co-info{flex:1;min-width:0}
+.co-name{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.co-meta{font-size:11px;color:var(--text2);font-weight:500;margin-top:2px}
+.co-line{font-size:13px;font-weight:800;color:var(--text);flex-shrink:0}
+.bill-sep{height:1px;background:var(--border);margin:10px 0 4px}
+
+/* Empty state */
+.empty{text-align:center;padding:44px 24px}
+.empty .e-ic{width:66px;height:66px;border-radius:20px;background:var(--m-bg);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+.empty .e-ic svg{width:30px;height:30px;stroke:var(--m);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.empty h3{font-size:15px;font-weight:800;margin-bottom:5px;letter-spacing:-.2px}
+.empty p{font-size:12.5px;color:var(--text2);line-height:1.5;max-width:250px;margin:0 auto}
+
+/* Skeletons */
+.sk{background:linear-gradient(90deg,#eef1f5 25%,#f6f8fb 50%,#eef1f5 75%);background-size:200% 100%;animation:shim 1.3s infinite;border-radius:8px}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sk-line{height:12px;margin-bottom:9px}
+.sk-card{height:74px;margin:0 16px 10px;border-radius:var(--radius)}
+/* structured skeleton row: avatar + two text lines, matches the real card shape */
+.sk-row{display:flex;align-items:center;gap:13px;padding:14px;margin:0 16px 10px;border:1.5px solid var(--border);border-radius:var(--radius);background:#fff}
+.sk-av{width:46px;height:46px;border-radius:13px;flex-shrink:0}
+.sk-lines{flex:1;display:flex;flex-direction:column;gap:8px}
+.sk-l1{height:13px;width:60%;border-radius:7px}
+.sk-l2{height:10px;width:38%;border-radius:7px}
+
+/* Bottom nav */
+#nav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(4px,env(safe-area-inset-bottom));box-shadow:0 -2px 20px rgba(0,0,0,.04)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 7px;background:none;border:none;cursor:pointer;position:relative;font-family:inherit}
+.nav-btn svg{width:22px;height:22px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s,transform .15s}
+.nav-btn:active svg{transform:scale(.88)}
+.nav-btn span{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:-.2px;transition:color .15s;white-space:nowrap;line-height:1}
+.nav-btn.active svg{stroke:var(--m);transform:translateY(-1px)}
+.nav-btn.active span{color:var(--m)}
+.nav-badge{position:absolute;top:5px;right:calc(50% - 20px);background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px}
+
+/* Account cards */
+.acc-card{display:flex;align-items:center;gap:11px;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:10px;transition:border .15s,background .15s,box-shadow .15s;cursor:pointer;background:#fff;position:relative}
+.acc-card:active{transform:scale(.98)}
+.acc-card.sel{border-color:var(--m);background:var(--m-bg);box-shadow:0 4px 14px rgba(217,30,122,.12)}
+.acc-av{width:40px;height:40px;border-radius:11px;background:var(--m-bg);color:var(--m-d);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;border:1.5px solid var(--m-bg2)}
+/* Icons carry vertical-align:-2px for inline text; inside a flex-centered box
+   that nudges them off-centre. Reset to block so they sit dead-centre. */
+/* ico() hardcodes vertical-align:-2px for inline text; inside ANY flex/inline-flex
+   icon box that nudges the glyph off-centre. Reset it for every centred icon box
+   so icons sit dead-centre everywhere. Inline-in-text icons keep their -2px. */
+.acc-av svg,.acc-act svg,.acc-del svg,.ct-ic svg,.e-ic svg,.pay-ic svg,.ord-ic svg,
+.cart-thumb svg,.co-thumb svg,.qty-btn svg,.pill svg,.warn-ic svg,.cdlg-ic svg,
+.cdlg-slot svg,.qr-status svg,.success-anim svg,#toast .t-ic svg,#hdr-chip svg,
+#hdr-icon svg,.sheet-x svg,.prod-fod svg,.nav-btn svg{vertical-align:0;display:block}
+.acc-card.used .acc-av{background:var(--green-bg);color:var(--green);border-color:rgba(22,163,74,.18)}
+.acc-info{flex:1;min-width:0}
+.acc-ph{font-size:14.5px;font-weight:800;letter-spacing:-.3px}
+.acc-meta{font-size:11px;color:var(--text2);font-weight:500;margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill-sel{background:var(--m);color:#fff}
+.pill-sel svg{stroke:#fff}
+/* Account card actions: a tight, uniform row of subtle icon buttons (copy /
+   refresh / delete). Same size, same neutral resting style — colour only on tap. */
+.acc-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.acc-act,.acc-del{width:34px;height:34px;border-radius:9px;background:var(--surface2);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s;padding:0}
+.acc-act svg,.acc-del svg{width:15px;height:15px;stroke:var(--text3);fill:none;stroke-width:2;transition:stroke .15s}
+.acc-act:active{background:var(--m-bg)}.acc-act:active svg{stroke:var(--m-d)}
+.acc-del:active{background:var(--red-bg)}.acc-del:active svg{stroke:var(--red)}
+.acc-act.spin svg{animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Inline warning / error cards (login) */
+.warn-card{display:flex;gap:11px;align-items:flex-start;padding:13px;border-radius:var(--radius-sm);margin-bottom:12px;background:var(--orange-bg);border:1px solid rgba(217,119,6,.22)}
+.bonus-ok,.bonus-no{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--radius-sm);margin:2px 0 12px;font-size:12.5px;font-weight:600;line-height:1.4}
+.bonus-ok{background:var(--green-bg);color:var(--green)}
+.bonus-no{background:var(--orange-bg);color:var(--orange)}
+.bonus-ok svg,.bonus-no svg{flex-shrink:0;vertical-align:0;display:block}
+.bonus-ok b,.bonus-no b{font-weight:800}
+.warn-card.err{background:var(--red-bg);border-color:rgba(220,38,38,.2)}
+.warn-card .warn-ic{width:40px;height:40px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.warn-card .warn-h{font-weight:800;font-size:13.5px;color:var(--orange);line-height:1.3}
+.warn-card.err .warn-h{color:var(--red)}
+.warn-card .warn-b{font-size:11.5px;color:var(--text2);font-weight:500;margin-top:2px;line-height:1.45}
+
+/* Product card */
+.prod{margin:0}
+.prod-card{background:#fff;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-sm);margin:0 16px 12px}
+.prod-hero{position:relative;background:#fff;overflow:hidden;border-bottom:1px solid var(--border)}
+.prod-imgs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.prod-imgs::-webkit-scrollbar{display:none}
+.prod-imgs img{width:100%;height:210px;object-fit:contain;flex-shrink:0;scroll-snap-align:center;background:#fff;padding:6px}
+.prod-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:5px}
+.prod-dots i{width:6px;height:6px;border-radius:50%;background:rgba(15,23,42,.18);transition:width .2s,background .2s}
+.prod-dots i.on{background:var(--m);width:18px;border-radius:3px}
+.prod-fod{position:absolute;top:10px;left:10px;background:var(--grad);color:#fff;font-size:11px;font-weight:800;padding:5px 11px;border-radius:100px;box-shadow:0 2px 8px rgba(176,21,96,.4);display:flex;align-items:center;gap:4px}
+.prod-body{padding:14px 16px 16px}
+.prod-brand{font-size:10.5px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.prod-name{font-size:15px;font-weight:800;line-height:1.35;letter-spacing:-.2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-price{display:flex;align-items:baseline;gap:9px;margin-top:10px}
+.prod-price .pp{font-size:21px;font-weight:800;letter-spacing:-.5px}
+.prod-price .pm{font-size:14px;color:var(--text3);text-decoration:line-through;font-weight:600}
+.prod-price .po{font-size:12.5px;color:var(--green);font-weight:800}
+.co-struck{display:block;font-size:11px;color:var(--text3);text-decoration:line-through;font-weight:600;margin-top:2px}
+.prod-upi{font-size:12px;color:var(--m-d);font-weight:600;margin-top:5px;display:flex;align-items:center;gap:5px}
+.prod-meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:11px;padding-top:11px;border-top:1px dashed var(--border)}
+.prod-meta span{font-size:11.5px;color:var(--text2);font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.prod-meta span.ok{color:var(--green)}.prod-meta span.no{color:var(--red)}
+
+/* Variation chips */
+/* Cart rows — clean, simple list */
+.cart-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.cart-row:last-of-type{border-bottom:none}
+.cart-thumb{width:52px;height:52px;border-radius:12px;background:var(--surface2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text4)}
+.cart-thumb img{width:100%;height:100%;object-fit:cover}
+.cart-thumb svg{width:22px;height:22px;stroke:var(--text4);fill:none;stroke-width:1.8}
+.cart-info{flex:1;min-width:0}
+.cart-nm{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px;line-height:1.3}
+.cart-mt{font-size:11.5px;color:var(--text3);font-weight:500;margin-top:3px}
+.cart-price{font-size:14px;font-weight:800;color:var(--text);flex-shrink:0;letter-spacing:-.2px}
+.cart-del{width:28px;height:28px;border-radius:50%;background:transparent;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s;margin-left:2px}
+.cart-del:active{background:var(--red-bg)}
+.qty-step{display:inline-flex;align-items:center;gap:0;margin-top:8px;border:1.5px solid var(--m-bg2);border-radius:9px;overflow:hidden;background:var(--m-bg)}
+.qty-btn{width:30px;height:28px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .12s}
+.qty-btn:active{background:var(--m-bg2)}
+.qty-btn.dis{opacity:.35;pointer-events:none}
+.qty-val{min-width:30px;text-align:center;font-size:13.5px;font-weight:800;color:var(--text);border-left:1.5px solid var(--m-bg2);border-right:1.5px solid var(--m-bg2);height:28px;line-height:28px}
+.cart-total-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;margin-top:4px;border-top:1px dashed var(--border)}
+.cart-total-bar .ctb-l{font-size:13px;font-weight:600;color:var(--text2)}
+.cart-total-bar .ctb-r{font-size:19px;font-weight:800;color:var(--text);letter-spacing:-.4px}
+.var-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:15px 0 9px}
+.var-grid{display:flex;flex-wrap:wrap;gap:8px}
+.var-chip{padding:9px 15px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;background:#fff;position:relative}
+.var-chip.sel{border-color:var(--m);background:var(--m-bg);color:var(--m-d)}
+.var-chip.oos{opacity:.4;text-decoration:line-through;cursor:not-allowed}
+.var-chip small{display:block;font-size:10px;font-weight:600;color:var(--text3);margin-top:1px}
+.var-chip.sel small{color:var(--m-d)}
+
+/* Pay options */
+.pay-opt{display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid #E2E8F0;border-radius:var(--radius-sm);margin-bottom:9px;cursor:pointer;transition:all .15s;background:#fff}
+.pay-opt.sel{border-color:var(--m);background:var(--m-bg)}
+.pay-opt.dis{opacity:.45;cursor:not-allowed}
+.pay-ic{width:38px;height:38px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pay-opt.sel .pay-ic{background:var(--m-bg2)}
+.pay-ic svg{width:19px;height:19px;stroke:var(--text2);fill:none;stroke-width:2}
+.pay-opt.sel .pay-ic svg{stroke:var(--m-d)}
+.pay-txt{flex:1}.pay-txt .pt1{font-size:13.5px;font-weight:800}.pay-txt .pt2{font-size:11px;color:var(--text2);font-weight:500;margin-top:1px}
+.pay-radio{width:20px;height:20px;border-radius:50%;border:2px solid #CBD5E1;flex-shrink:0;position:relative;transition:border .15s}
+.pay-opt.sel .pay-radio{border-color:var(--m)}
+.pay-opt.sel .pay-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--m)}
+
+/* Order rows */
+.ord-card{display:flex;align-items:center;gap:12px;padding:13px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:9px;cursor:pointer;box-shadow:var(--shadow-xs);transition:transform .12s}
+.ord-card:active{transform:scale(.98)}
+.ord-ic{width:46px;height:46px;border-radius:11px;background:var(--m-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.ord-ic svg{width:20px;height:20px;stroke:var(--m-d);fill:none;stroke-width:2}
+.ord-ic img{width:100%;height:100%;object-fit:cover}
+.ord-info{flex:1;min-width:0}
+.ord-num{font-size:13px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-meta{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-chev{color:var(--text3);flex-shrink:0}
+.ord-chev svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* Wallet hero */
+
+/* Stat grid */
+
+/* Accordion */
+.acc-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);margin:0 16px 10px;overflow:hidden}
+.acc-hd{display:flex;align-items:center;gap:10px;padding:14px 15px;cursor:pointer;font-size:13px;font-weight:700}
+.acc-hd .ah-ic{width:30px;height:30px;border-radius:8px;background:var(--m-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acc-hd .ah-ic svg{width:15px;height:15px;stroke:var(--m-d);fill:none;stroke-width:2}
+.acc-hd .chev{margin-left:auto;transition:transform .2s}.acc-hd .chev svg{width:16px;height:16px;stroke:var(--text3);fill:none;stroke-width:2.5}
+.acc-wrap.open .chev{transform:rotate(180deg)}
+.acc-bd{display:none;padding:0 15px 15px;border-top:1px solid var(--border);padding-top:14px}
+.acc-wrap.open .acc-bd{display:block}
+
+/* Steps */
+.steps{display:flex;gap:6px;margin-bottom:16px}
+.step-dot{flex:1;height:4px;border-radius:2px;background:#E2E8F0;transition:background .3s}
+.step-dot.on{background:var(--m)}
+
+/* Loader */
+#loader{position:fixed;inset:0;background:rgba(255,255,255,.78);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:900}
+#loader.on{display:flex}
+.spin{width:42px;height:42px;border:3.5px solid var(--m-bg2);border-top-color:var(--m);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Toast */
+#toast{position:fixed;top:max(14px,env(safe-area-inset-top));left:16px;right:16px;max-width:448px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);padding:13px 14px;display:none;align-items:center;gap:11px;z-index:1000;transform:translateY(-120%);transition:transform .3s cubic-bezier(.2,.8,.2,1);border:1px solid var(--border)}
+#toast.show{display:flex;transform:none}
+#toast .t-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#toast .t-ic svg{width:17px;height:17px;fill:none;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+#toast .t-msg{flex:1;font-size:13px;font-weight:600;line-height:1.4}
+#toast .t-bar{position:absolute;bottom:6px;left:14px;right:14px;height:2.5px;border-radius:2px}
+#toast.err .t-ic{background:#FEE2E2}#toast.err .t-ic svg{stroke:#DC2626}#toast.err .t-bar{background:#DC2626}
+#toast.suc .t-ic{background:#DCFCE7}#toast.suc .t-ic svg{stroke:#16A34A}#toast.suc .t-bar{background:#16A34A}
+#toast.inf .t-ic{background:var(--m-bg)}#toast.inf .t-ic svg{stroke:var(--m-d)}#toast.inf .t-bar{background:var(--m)}
+
+/* Modal / sheet */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(6px);display:none;z-index:950;opacity:0;transition:opacity .25s}
+.mask.show{display:block;opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:#fff;border-radius:24px 24px 0 0;z-index:960;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.85,.25,1);padding:0 18px max(20px,env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto}
+.sheet.show{transform:none}
+/* grip + header form ONE sticky top bar so the Order # title stays pinned while
+   the content scrolls under it (no floating/duplicated header) */
+.sheet-grip{position:sticky;top:0;background:#fff;z-index:5;padding:8px 0 2px;margin:0 -18px;display:flex;justify-content:center;border-radius:24px 24px 0 0}
+.sheet-grip::before{content:"";width:38px;height:4px;background:#E2E8F0;border-radius:2px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;position:sticky;top:14px;background:#fff;padding:8px 0 10px;z-index:4;border-bottom:1px solid var(--border)}
+.sheet-h .st{font-size:17px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sheet-x{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sheet-x svg{width:16px;height:16px;stroke:var(--text2);fill:none;stroke-width:2.4}
+
+/* Premium confirm dialog (centered) */
+#cmask{position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(6px);display:none;z-index:980;opacity:0;transition:opacity .2s;align-items:center;justify-content:center;padding:24px}
+#cmask.show{display:flex;opacity:1}
+.cdlg{width:100%;max-width:340px;background:#fff;border-radius:22px;padding:24px 22px 20px;box-shadow:0 24px 60px rgba(15,23,42,.28);transform:scale(.9);transition:transform .25s cubic-bezier(.2,.85,.25,1);text-align:center}
+#cmask.show .cdlg{transform:scale(1)}
+.cdlg-ic{width:58px;height:58px;border-radius:17px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:var(--m-bg)}
+.cdlg-ic svg{width:28px;height:28px;stroke:var(--m-d);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cdlg-ic.danger{background:var(--red-bg)}.cdlg-ic.danger svg{stroke:var(--red)}
+.cdlg-h{font-size:18px;font-weight:800;letter-spacing:-.3px;color:var(--text)}
+.cdlg-b{font-size:13px;color:var(--text2);font-weight:500;line-height:1.5;margin-top:6px}
+.cdlg-slot{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:6px 13px;border-radius:100px;background:var(--m-bg);color:var(--m-d);font-size:12px;font-weight:800}
+.cdlg-slot svg{width:14px;height:14px;stroke:var(--m-d);fill:none;stroke-width:2}
+.cdlg-btns{display:flex;gap:10px;margin-top:20px}
+.cdlg-btns .btn{margin:0}
+.cbtn-cancel{background:var(--surface2);color:var(--text2);border:1.5px solid #E2E8F0}
+
+/* QR modal */
+.qr-wrap{text-align:center;padding:6px 0 4px}
+.qr-amt{font-size:26px;font-weight:900;color:var(--m-d);letter-spacing:-.6px}
+.qr-vpa{font-size:11.5px;color:var(--text2);font-weight:600;margin:3px 0 14px}
+.qr-img{width:210px;height:210px;border:2px dashed var(--m-bg2);border-radius:16px;padding:8px;margin:0 auto 14px;background:#fff}
+.qr-img img{width:100%;height:100%;border-radius:9px}
+.qr-status{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;font-size:12px;font-weight:700;margin-bottom:14px}
+.qr-status.wait{background:#FEF3C7;color:#B45309}
+.qr-status.ok{background:#DCFCE7;color:#16A34A}
+.qr-status.no{background:#FEE2E2;color:#DC2626}
+
+/* Success screen */
+.success-anim{width:88px;height:88px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;margin:8px auto 16px;animation:pop .4s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.success-anim svg{width:44px;height:44px;stroke:var(--green);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* Timeline */
+.tl{position:relative;padding-left:26px;margin-top:6px}
+.tl-item{position:relative;padding:0 0 16px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-26px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid #E2E8F0;z-index:2}
+.tl-item.done .tl-dot{border-color:var(--green);background:var(--green)}
+.tl-item.now .tl-dot{border-color:var(--m);background:var(--m);box-shadow:0 0 0 4px var(--m-bg)}
+.tl-line{position:absolute;left:-20px;top:14px;bottom:-2px;width:2px;background:#E2E8F0}
+.tl-item:last-child .tl-line{display:none}
+.tl-item.done .tl-line{background:var(--green)}
+.tl-st{font-size:13px;font-weight:700}.tl-item.now .tl-st{color:var(--m-d)}
+.tl-dt{font-size:11px;color:var(--text3);font-weight:500;margin-top:1px}
+
+/* Gate */
+#gate{height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+#gate .g-ic{width:80px;height:80px;border-radius:24px;background:var(--m-bg);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+#gate .g-ic svg{width:38px;height:38px;stroke:var(--m);fill:none;stroke-width:1.8}
+#gate h2{font-size:19px;font-weight:800;margin-bottom:8px}
+#gate p{font-size:13.5px;color:var(--text2);line-height:1.55;max-width:280px}
+
+.mt10{margin-top:10px}.mt14{margin-top:14px}.tc{text-align:center}.hide{display:none!important}
+.hint{font-size:11.5px;color:var(--text3);font-weight:500;line-height:1.5;margin-top:8px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+/* ── in-bot product search ── */
+.srch-bar{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:4px 6px 4px 12px}
+.srch-bar:focus-within{border-color:var(--m-d)}
+.srch-bar-ic svg{width:17px;height:17px;stroke:var(--text3);display:block}
+.srch-input{flex:1;border:0;outline:0;font-size:14px;font-weight:600;color:var(--text1);background:transparent;padding:9px 0}
+.srch-go{width:34px;height:34px;border:0;border-radius:var(--radius-xs);background:var(--m-d);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.srch-go svg{width:18px;height:18px;stroke:#fff}
+.search-sugg{margin:4px 0 0;background:#fff;border-radius:var(--radius-xs);overflow:hidden}
+.sugg-item{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13.5px;color:var(--text2);font-weight:600}
+.sugg-item:last-child{border-bottom:0}
+.sugg-item:active{background:var(--m-bg)}
+.sugg-item svg{width:15px;height:15px;stroke:var(--text3);flex-shrink:0}
+/* square 2-column product grid */
+.srch-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:12px 16px 4px}
+.srch-card{display:flex;flex-direction:column;border:1.5px solid var(--border);border-radius:var(--radius);background:#fff;overflow:hidden;transition:border .15s,box-shadow .15s}
+.srch-card:active{border-color:var(--m-d);box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.srch-img{width:100%;aspect-ratio:1/1;background:#F1F5F9 center/cover no-repeat;cursor:pointer}
+.srch-name{font-size:12px;font-weight:700;color:var(--text1);line-height:1.3;padding:8px 9px 0;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:32px}
+.srch-price{font-size:14px;color:var(--text1);padding:5px 9px 0}
+.srch-price s{color:var(--text4);font-size:11px;font-weight:500}
+.srch-off{display:inline-block;font-size:9.5px;font-weight:800;color:var(--green);padding:2px 9px 0}
+.srch-addbtn{margin:8px 9px 10px;border:0;border-radius:var(--radius-xs);background:var(--m-bg);color:var(--m-d);font-size:12.5px;font-weight:800;padding:8px 0;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.srch-addbtn svg{width:15px;height:15px;stroke:var(--m-d)}
+.srch-addbtn.added{background:var(--green);color:#fff}
+.srch-addbtn.added svg{stroke:#fff}
+.srch-addbtn:disabled{opacity:.7}
+/* add-to-cart bottom sheet */
+.as-top{display:flex;gap:12px;padding:4px 16px 6px}
+.as-img{width:88px;height:88px;border-radius:var(--radius);background:#F1F5F9 center/cover no-repeat;flex-shrink:0}
+.as-info{flex:1;min-width:0}
+.as-name{font-size:13.5px;font-weight:800;color:var(--text1);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.as-price{font-size:15px;color:var(--text1);margin-top:5px}
+.as-price s{color:var(--text4);font-size:12px;font-weight:500}
+.as-off{font-size:11px;font-weight:800;color:var(--green)}
+.as-upi{font-size:11.5px;color:var(--m-d);font-weight:700;margin-top:3px;display:flex;align-items:center;gap:4px}
+.as-stock{font-size:11px;font-weight:700;margin-top:4px;display:flex;align-items:center;gap:4px}
+.as-stock.ok{color:var(--green)}.as-stock.no{color:var(--red)}
+.as-vtitle{font-size:12.5px;font-weight:800;color:var(--text2);padding:10px 16px 2px}
+.as-vgrid{display:flex;flex-wrap:wrap;gap:8px;padding:6px 16px 2px}
+/* sticky Add-to-Cart footer so it's ALWAYS visible even with many sizes */
+.as-qtyrow{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 2px}
+.as-qtylbl{font-size:12.5px;font-weight:800;color:var(--text2)}
+.as-qty{display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--radius-xs);overflow:hidden}
+.as-qtyv{min-width:34px;text-align:center;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.as-foot{position:sticky;bottom:0;left:0;right:0;background:#fff;padding:12px 16px calc(6px + env(safe-area-inset-bottom));margin:8px -18px 0;box-shadow:0 -6px 16px rgba(0,0,0,.06);z-index:3}
+/* order-detail delivery address */
+.addr-body{font-size:12.5px;color:var(--text2);font-weight:500;line-height:1.55;margin-top:4px}
+.addr-phone{font-size:12.5px;color:var(--text1);font-weight:700;margin-top:7px;display:flex;align-items:center;gap:5px}
+/* cancel-order reason picker */
+.cx-reasons{display:flex;flex-direction:column;gap:8px}
+.cx-opt{padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--text1);cursor:pointer;transition:border .15s,background .15s}
+.cx-opt.sel{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="hdr-icon"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+    <div id="hdr-text"><div id="hdr-name">Meesho Premium</div><div id="hdr-sub">Order Automation</div></div>
+    <div id="hdr-chip" class="hide"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="hdr-bal">0</span></div>
+  </div>
+
+  <div id="pages">
+    <!-- pages injected/rendered by JS -->
+    <div class="page active" id="pg-account"></div>
+    <div class="page" id="pg-address"></div>
+    <div class="page" id="pg-search"></div>
+    <div class="page" id="pg-order"></div>
+    <div class="page" id="pg-orders"></div>
+    <div class="page" id="pg-order-detail"></div>
+  </div>
+
+  <div id="nav">
+    <button class="nav-btn active" id="nav-account" onclick="switchTab('account')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Account</span></button>
+    <button class="nav-btn" id="nav-address" onclick="switchTab('address')"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Address</span></button>
+    <button class="nav-btn" id="nav-search" onclick="switchTab('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Search</span></button>
+    <button class="nav-btn" id="nav-order" onclick="switchTab('order')"><svg viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span>Cart</span></button>
+    <button class="nav-btn" id="nav-orders" onclick="switchTab('orders')"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Orders</span></button>
+  </div>
+</div>
+
+<div id="loader"><div class="spin"></div></div>
+<div id="toast"><div class="t-ic"></div><div class="t-msg"></div><div class="t-bar"></div></div>
+<div class="mask" id="mask" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"><div class="sheet-grip"></div><div id="sheet-body"></div></div>
+<div id="cmask"><div class="cdlg" id="cdlg"></div></div>
+
+<script>
+
+/* ═══════════ Meesho Mini App — client ═══════════ */
+const TOKEN = new URLSearchParams(location.search).get('token') || '';
+// Scrub the token out of the visible URL right after reading it, so it doesn't
+// linger in the webview history / a screenshot of the URL bar. (It's kept in the
+// TOKEN variable and sent via the x-token header on every request.)
+try{if(TOKEN&&location.search){history.replaceState(null,'',location.pathname);}}catch(e){}
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const money = n => '₹'+Number(n||0).toLocaleString('en-IN');
+// Digit-only input, clamped to `max` length (e.g. 10 for phone, 6 for OTP/pin).
+function _num(el,max){if(!el)return;el.value=(el.value||'').replace(/\D/g,'').slice(0,max);}
+let _tab='account', _accounts=[], _selPhone=null, _product=null, _selVar=null, _payMethod='cod', _summary=null, _toastT=null, _busy=false, _sheetOpen=false, _lastOrderAddr=null, _checkoutBusy=false;
+
+/* ---- SVG icon set (crisp, stroke) ---- */
+const IC = {
+  phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.9.36 1.79.7 2.63a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.44-1.27a2 2 0 0 1 2.11-.45c.84.34 1.73.57 2.63.7A2 2 0 0 1 22 16.92z"/>',
+  key:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5 18 5l3 3"/>',
+  gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8M16.5 8a2.5 2.5 0 0 0 0-5C13 3 12 8 12 8"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  bag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  wallet:'<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
+  cod:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  upi:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+  chevR:'<path d="m9 18 6-6-6-6"/>',
+  chevL:'<path d="m15 18-6-6 6-6"/>',
+  chevD:'<path d="m6 9 6 6 6-6"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  refresh:'<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  box:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22V12"/>',
+  json:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  truck:'<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  empty:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  star:'<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/>',
+  ticket:'<path d="M3 8a3 3 0 0 1 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a3 3 0 0 1 0-6V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M15 5v14"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  tag:'<path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.58a2 2 0 0 1 0 2.83z"/><circle cx="7" cy="7" r="1.2"/>',
+  alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
+  receipt:'<path d="M5 2v20l2-1.5L9 22l2-1.5L13 22l2-1.5L17 22l2-1.5V2l-2 1.5L15 2l-2 1.5L11 2 9 3.5 7 2z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>'
+};
+// Inline icon at a given pixel size (for use inside text runs / pills).
+const ico=(k,px=14,color)=>`<svg viewBox="0 0 24 24" fill="none" stroke="${color||'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:${px}px;height:${px}px;vertical-align:-2px;flex-shrink:0">${IC[k]||''}</svg>`;
+const svg=(k,cls='')=>`<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]||''}</svg>`;
+
+/* ---- infra ---- */
+function L(on){$('loader').classList.toggle('on',on)}
+function haptic(t){try{window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(t||'light')}catch(e){}}
+// Map a backend error (code OR message) to clear, friendly copy so the user
+// always understands WHAT went wrong (never a bare "Something went wrong").
+// Keys are the short codes / exact strings the backend returns from err(...).
+const ERR_MAP={
+  // ── welcome-bonus held by an unpaid order ───────────────────────
+  // Creating a UPI order reserves the discount with Meesho until that order is
+  // paid or lapses. Rather than quote the full price in the meantime (which reads
+  // as a scam), the server refuses to quote and we explain why.
+  // ── hunt ────────────────────────────────────────────────────────
+  // The bot refuses to hand out a below-top-tier session, so a miss asks the
+  // user to try again rather than silently giving them a smaller discount.
+  hunt_retry:'Best offer abhi nahi mila — "Send OTP" dobara dabayein. Aapko poora discount hi milega.',
+  rate_limited:'Too many requests — please wait a few minutes and try again.',
+  // ── session / auth ──────────────────────────────────────────────
+  session:'Session expired — please re-open the app from the bot chat.',
+  session_expired:'This account has expired — re-login it once in the Account tab.',
+  'Session expired, start again':'Your login session timed out — please start again.',
+  'Session expired, start login again':'Your login session timed out — please start the login again.',
+  // ── slots / account state ───────────────────────────────────────
+  no_slots:'You have no order slots left — buy more in the bot chat.',
+  'Your account is blocked. Contact support.':'Your account is blocked. Please contact support.',
+  'Account not found':'Account not found — it may have been removed.',
+  'Account session not found':'This account needs to be logged in again (Account tab).',
+  no_ox:"This account can't be refreshed — please re-login it in the Account tab.",
+  // ── login / phone / referral ────────────────────────────────────
+  already_registered:'This number is already registered on Meesho. The welcome bonus only works on a NEW number, so please use a fresh number.',
+  'phone required':'Please enter your phone number.',
+  'Invalid phone':'Please enter a valid 10-digit mobile number.',
+  'Invalid phone number':'Please enter a valid 10-digit mobile number.',
+  'Invalid referral':'That referral link or code is invalid — leave it blank to skip.',
+  'Invalid referral link or code':'That referral link or code is invalid — leave it blank to skip.',
+  check_failed:"Couldn't check this number right now — please try again.",
+  // ── OTP ─────────────────────────────────────────────────────────
+  otp_send_failed:"Couldn't send the OTP — please try again in a moment.",
+  otp_verify_failed:"Couldn't verify the OTP — please request a new code and try again.",
+  'Failed to send OTP':"Couldn't send the OTP — please try again in a moment.",
+  'OTP verification failed, try again':'That OTP was incorrect or expired — please try again.',
+  'Invalid OTP (4-6 digits)':'Please enter the 4–6 digit OTP.',
+  'Sending the OTP took too long — please try again.':'Sending the OTP took too long — please try again.',
+  'Verifying the OTP took too long — please try again.':'Verifying the OTP took too long — please try again.',
+  // ── product / cart ──────────────────────────────────────────────
+  'Invalid Meesho product link':'That doesn’t look like a valid Meesho product link.',
+  product_fetch_failed:"Couldn't load that product — check the link and try again.",
+  'Product not found':'That product could not be found — it may be out of stock or removed.',
+  'Product data expired, fetch the product again':'Product details expired — please fetch the product again.',
+  'Invalid variation':'Please pick a valid size / variation.',
+  'Could not add to cart':"Couldn't add this to the cart — it may be out of stock. Please try again.",
+  cart_unreachable:"Couldn't load your cart — please try again.",
+  'Your cart is empty':'Your cart is empty — add a product first.',
+  'Your Meesho cart is empty (nothing added in the Meesho app)':'Your Meesho cart is empty — add a product first.',
+  // ── address ─────────────────────────────────────────────────────
+  'Set your delivery address first':'Please set your delivery address first (Address tab).',
+  'Please set a delivery address first (Address tab)':'Please set your delivery address first (Address tab).',
+  'City, state and address line 1 are required':'Please fill in city, state and address line 1.',
+  'Address line 2 is mandatory':'Address line 2 is required — please fill it in.',
+  'Pincode must be 6 digits':'Pincode must be exactly 6 digits.',
+  'Invalid mobile number':'Please enter a valid 10-digit mobile number for delivery.',
+  'Please enter your name using letters/numbers only':'Please enter your name using English letters and numbers only.',
+  'Please enter your city, state and address using English letters/numbers.':'Please use English letters and numbers only for city, state and address (no emoji / special symbols).',
+  'Failed to add address':"Couldn't save the address — please check the details and try again.",
+  // ── order / payment ─────────────────────────────────────────────
+  'Order data expired, start over':'Your order details expired — please start the order again.',
+  processing:'Your order is being placed — please wait.',
+  'Your order is already being placed — please wait.':'Your order is already being placed — please wait.',
+  "Couldn't confirm the order amount. Please try again.":"Couldn't confirm the order amount — please try again.",
+  "Couldn't confirm the UPI amount. Please try again or use COD.":"Couldn't confirm the UPI amount — please try again, or use COD.",
+  "Couldn't place the order — please try again.":"Couldn't place the order — please try again.",
+  'Order placement failed at Meesho — please retry':'Meesho couldn’t place the order — please retry.',
+  "Couldn't start the UPI order — please try again or use COD.":"Couldn't start the UPI payment — please try again, or use COD.",
+  'UPI is having a temporary issue — please try UPI again in a moment, or use COD.':'UPI is having a temporary issue — please try again in a moment, or use COD.',
+  "Couldn't set up UPI payment. Please try again or use COD.":"Couldn't set up UPI payment — please try again, or use COD.",
+  'This order is already placed and can\'t be cancelled.':'This order is already placed and can’t be cancelled.',
+  'No pending payment found':'No pending payment found — please start the order again.',
+  'This payment was cancelled':'That payment was cancelled — start the order again to retry.',
+  'Order not found or session expired':'Order not found — it may have expired. Please start again.',
+  // ── generic network ─────────────────────────────────────────────
+  network:'Network issue — please try again.',
+  'Network issue — please try again':'Network issue — please try again.',
+};
+function friendly(e){
+  if(!e)return 'Something went wrong — please try again.';
+  const s=String(e).trim();
+  if(ERR_MAP[s])return ERR_MAP[s];
+  // Case-insensitive fallback match for the short codes.
+  const lc=s.toLowerCase();
+  for(const k in ERR_MAP){if(k.toLowerCase()===lc)return ERR_MAP[k];}
+  // Anything that looks technical (stack/exception/HTTP/JSON) → clean generic,
+  // never leak internals to the user. NOTE: do NOT reject on length alone — a clean
+  // human sentence (e.g. "This number is already registered…", 142 chars) must show
+  // in full; only gate very long messages that also look like a code dump.
+  if(/[{}\[\]]|Traceback|Exception|Error:|HTTP\s?\d|Proxy failed|status\s?\d|str\(e\)|\bat\s+\w+:\d/i.test(s))
+    return 'Something went wrong — please try again.';
+  if(s.length>240) return 'Something went wrong — please try again.';
+  // A human sentence from the backend is safe to show as-is.
+  return s;
+}
+function toast(msg,type){if(type==='info')type='inf';const t=$('toast');t.className='';t.classList.add(type||'inf','show');
+  const ic=type==='err'?IC.x:type==='suc'?IC.check:IC.refresh;
+  t.querySelector('.t-ic').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">${ic}</svg>`;
+  t.querySelector('.t-msg').textContent=msg;const bar=t.querySelector('.t-bar');
+  bar.style.transition='none';bar.style.width='100%';requestAnimationFrame(()=>{bar.style.transition='width 3s linear';bar.style.width='0%'});
+  clearTimeout(_toastT);_toastT=setTimeout(closeToast,3000);haptic(type==='err'?'medium':'light')}
+function closeToast(){$('toast').classList.remove('show')}
+let _sessionDead=false;
+function showSessionGate(){
+  if(_sessionDead)return;_sessionDead=true;
+  document.body.innerHTML=`<div id="gate"><div class="g-ic">${svg('bag')}</div><h2>Session expired</h2><p>Please re-open this app from the button inside the Meesho bot chat.</p></div>`;
+}
+async function api(path,body,opts){
+  if(_sessionDead)return null;
+  opts=opts||{};
+  const opt={method:body?'POST':'GET',headers:{'x-token':TOKEN}};
+  if(body){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body)}
+  // SECURITY: send the auth token ONLY via the x-token header, never in the URL
+  // query — a query-string token leaks via Referer, webview/browser history and
+  // tunnel access logs, and (being non-expiring) is then a permanent credential.
+  const url=path+(path.includes('?')?'&':'?')+'_='+Date.now();
+  // Default 35s abort; a long-running call (the login hunt keeps searching for the
+  // ₹9 session and can take a while) passes opts.timeout to extend it.
+  const _to_ms=(opts&&opts.timeout)||35000;
+  const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),_to_ms);opt.signal=ctrl.signal;
+  try{const r=await fetch(url,opt);clearTimeout(to);const j=await r.json();
+    // A present-but-invalid token makes every call return {ok:false,error:'session'}.
+    // Show the re-open gate instead of letting screens render as "empty".
+    if(j&&j.ok===false&&j.error==='session'){showSessionGate();return null}
+    return j}
+  // Background polls pass {silent:true} so a flaky connection doesn't spam a red
+  // "Network error" toast every 5s while the QR sheet is open.
+  catch(e){clearTimeout(to);if(!opts.silent)toast('Network error, try again','err');return null}
+}
+function openSheet(html){_sheetOpen=true;$('sheet-body').innerHTML=html;$('mask').classList.add('show');requestAnimationFrame(()=>$('sheet').classList.add('show'))}
+function closeSheet(){_sheetOpen=false;if(typeof stopQrPoll==='function')stopQrPoll();$('sheet').classList.remove('show');$('mask').classList.remove('show')}
+// Premium confirm dialog — replaces the ugly native confirm(). Returns a Promise<bool>.
+function confirmSheet(o){
+  o=o||{};
+  return new Promise(res=>{
+    const dlg=$('cdlg');
+    const slot=o.slot?`<div class="cdlg-slot">${ico('ticket',14,'var(--m-d)')} Uses 1 order slot</div>`:'';
+    dlg.innerHTML=`<div class="cdlg-ic ${o.danger?'danger':''}">${svg(o.icon||(o.danger?'trash':'check'))}</div>
+      <div class="cdlg-h">${esc(o.title||'Are you sure?')}</div>
+      ${o.body?`<div class="cdlg-b">${esc(o.body)}</div>`:''}
+      ${slot}
+      <div class="cdlg-btns"><button class="btn cbtn-cancel" id="cno">${esc(o.cancel||'Cancel')}</button>
+      <button class="btn ${o.danger?'btn-danger':'btn-m'}" id="cyes">${esc(o.ok||'Confirm')}</button></div>`;
+    const mask=$('cmask');
+    const done=(v)=>{mask.classList.remove('show');setTimeout(()=>{$('cyes')&&$('cyes').removeEventListener('click',oy);},0);res(v)};
+    const oy=()=>done(true), on=()=>done(false);
+    mask.classList.add('show');
+    $('cyes').onclick=oy;$('cno').onclick=on;
+    mask.onclick=(e)=>{if(e.target===mask)done(false)};
+    haptic('light');
+  });
+}
+
+/* ---- nav ---- */
+function switchTab(t,force){
+  const same=(t===_tab);
+  // Leaving the Order tab mid-checkout → discard the in-progress order state.
+  if(_tab==='order' && t!=='order' && _summary){discardCheckout();}
+  _tab=t;haptic('light');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  $('pg-'+t).classList.add('active');$('nav-'+t).classList.add('active');
+  // Re-render unless we're re-tapping the same tab that already has content
+  // (avoids a needless refetch) — but the Order tab always re-renders so a
+  // completed order / account change never leaves stale content.
+  if(force || t==='order' || !same || !$('pg-'+t).innerHTML.trim())
+    ({account:renderAccount,address:renderAddress,search:renderSearch,order:renderOrder,orders:renderOrders}[t])();
+}
+function setChip(n){const c=$('hdr-chip');if((n||0)<=0){c.classList.add('hide');return}c.classList.remove('hide');$('hdr-bal').textContent=n}
+function skeleton(pg,n){$(pg).innerHTML=Array(n||3).fill('<div class="sk-row"><div class="sk sk-av"></div><div class="sk-lines"><div class="sk sk-l1"></div><div class="sk sk-l2"></div></div></div>').join('')}
+
+/* ═══════════ ACCOUNT TAB ═══════════ */
+async function renderAccount(){
+  skeleton('pg-account',3);
+  const a=await api('/api/accounts');_accounts=(a&&a.ok&&a.accounts)?a.accounts:[];
+  setChip(_accounts.length);
+  let h=`<div class="sec-title">Accounts<span>Login & manage your Meesho accounts</span></div>`;
+  // OTP login card
+  h+=`<div class="card"><div class="card-title"><div class="ct-ic">${svg('phone')}</div>OTP Login</div>
+    <div id="login-box">
+      <div class="field"><label class="flbl">Phone Number</label><input class="inp" id="lg-phone" inputmode="numeric" maxlength="10" oninput="_num(this,10);onPhoneInput()" placeholder="10-digit mobile"></div>
+      <div id="lg-numchk"></div>
+      <div class="field"><label class="flbl">Referral (optional)</label><input class="inp" id="lg-ref" placeholder="Link or code — leave blank to skip"></div>
+      <div class="field"><label class="flbl">Welcome Bonus Tier</label>
+        <div class="tier-row" id="lg-tiers">
+          <div class="tier-opt" data-tier="110" onclick="selTier(110)">₹110<span class="ts">Fast</span></div>
+          <div class="tier-opt" data-tier="120" onclick="selTier(120)">₹120<span class="ts">Good</span></div>
+          <div class="tier-opt" data-tier="135" onclick="selTier(135)">₹135<span class="ts">Better</span></div>
+          <div class="tier-opt" data-tier="150" onclick="selTier(150)">₹150<span class="ts">High</span></div>
+          <div class="tier-opt sel" data-tier="180" onclick="selTier(180)">₹180<span class="ts">Max</span></div>
+        </div>
+        <div class="hint" style="margin:6px 2px 0;font-size:11px">A tier is the MINIMUM — we always hunt the lowest UPI (down to ₹9-15) at or above it.</div>
+      </div>
+      <button class="btn btn-m" onclick="loginStart()">${svg('gift')} Find Best Offer & Continue</button>
+    </div></div>`;
+  // JSON import accordion (per-account export is a copy button on each card below)
+  h+=`<div class="acc-wrap" id="acc-json"><div class="acc-hd" onclick="toggleAcc('acc-json')"><div class="ah-ic">${svg('json')}</div>Import via JSON<div class="chev">${svg('chevD')}</div></div>
+    <div class="acc-bd"><div class="field"><textarea class="inp" id="js-in" placeholder='{"phone":"+91...","user_id":"...","xo_token":"..."}'></textarea></div>
+    <button class="btn btn-outline" onclick="importJson()">${svg('check')} Import Account</button></div></div>`;
+  // Saved accounts
+  h+=`<div class="acc-sec-hd"><span class="acc-sec-t">Saved Accounts</span><span class="acc-sec-c">${_accounts.length} total</span></div><div id="acc-list"></div>`;
+  $('pg-account').innerHTML=h;renderAccList();
+}
+function renderAccList(){
+  const el=$('acc-list');if(!el)return;
+  if(!_accounts.length){el.innerHTML=emptyBox('user','No accounts yet','Login with OTP or import a JSON to get started.');return}
+  el.innerHTML='<div style="margin:0 16px">'+_accounts.map(a=>{
+    const used=a.placed;const sel=_selPhone===a.phone;
+    // No bonus number here — the login-time/logged-in FOD probes are only hints
+    // and disagree with the real cart discount, so showing a ₹ figure misleads.
+    // The actual bonus is shown at checkout (Bill Details) from the live cart.
+    // Status badge: "Ordered" once an order is placed, else "Ready". We do NOT
+    // show a "Registered" badge off `new_account` — that flag comes from Meesho's
+    // login `user.new`, which is unreliable (it reads false for many genuinely
+    // fresh accounts right after signup), so it wrongly labelled ~half the accounts
+    // "Registered". The real welcome-bonus check happens live at checkout anyway.
+    const status=used?`<span class="pill pill-green">${ico('check',11)} Ordered</span>`:`<span class="pill pill-m">${ico('check',11)} Ready</span>`;
+    return `<div class="acc-card ${used?'used':''} ${sel?'sel':''}" onclick="selectAccount('${esc(a.phone)}')">
+      <div class="acc-av">${ico('user',20,used?'var(--green)':'var(--m-d)')}</div>
+      <div class="acc-info"><div class="acc-ph">${esc(a.phone)}</div>
+      <div class="acc-meta">${status}${sel?`<span class="pill pill-sel">${ico('check',10)} Selected</span>`:''}</div></div>
+      <div class="acc-actions">
+        <button class="acc-act" title="Copy account JSON" onclick="event.stopPropagation();copyAccount('${esc(a.phone)}',this)">${svg('json')}</button>
+        <button class="acc-act" title="Refresh session" onclick="event.stopPropagation();refreshAccount('${esc(a.phone)}',this)">${svg('refresh')}</button>
+        <button class="acc-del" title="Delete account" onclick="event.stopPropagation();delAccount('${esc(a.phone)}')">${svg('trash')}</button>
+      </div></div>`;
+  }).join('')+'</div>';
+}
+async function refreshAccount(phone,btn){
+  if(btn){btn.classList.add('spin');btn.disabled=true}
+  const r=await api('/api/account/refresh',{phone});
+  if(btn){btn.classList.remove('spin');btn.disabled=false}
+  if(r&&r.ok){toast('Session refreshed','suc');haptic('light')}
+  else if(r?.error==='no_ox'){toast('Re-login this account once to enable refresh','err')}
+  else{toast(friendly(r?.error)||'Refresh failed','err')}
+}
+// Copy ONE account's JSON straight to the clipboard — one tap, no textarea.
+// Copy any short text to the clipboard (UPI ID, tracking id, etc.).
+async function copyText(txt,btn,okMsg){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}
+    else{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+    toast(okMsg||'Copied','suc');haptic('light');
+  }catch(e){toast('Copy failed','err');}
+}
+async function copyAccount(phone,btn){
+  if(btn){btn.classList.add('spin');btn.disabled=true}
+  const r=await api('/api/export?phone='+encodeURIComponent(phone));
+  if(btn){btn.classList.remove('spin');btn.disabled=false}
+  if(!r||!r.ok||!r.export){toast(friendly(r?.error)||'Export failed','err');return}
+  const txt=JSON.stringify(r.export,null,2);
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(txt);toast('Account JSON copied','suc');haptic('light');
+    }else{
+      const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('Account JSON copied','suc');haptic('light');
+    }
+  }catch(e){toast('Copy failed — try again','err');}
+}
+function resetOrderFlow(){_product=null;_selVar=null;_summary=null;_cart=[]}
+// Tell the backend to drop any in-progress checkout state when the user leaves
+// the checkout screen — so a stale pending_order / un-paid UPI QR can't corrupt
+// the NEXT checkout (bonus loss / "UPI unavailable" / "order data expired" on a
+// second attempt). Fire-and-forget; never blocks the UI. Only when we actually
+// had a checkout open (_summary set) to avoid needless calls.
+let _discarding=false;
+// SOFT by default (a back-tap / peek at payment): preserves the FOD-bearing
+// pending_order so re-entering checkout reuses the SAME offer instead of re-rolling
+// (fix for "offer laga → payment gaya → wapas → offer gaya → phir laga"). Pass
+// hard=true only on an EXPLICIT abandon (Order More / switch account) to cancel the
+// unpaid UPI QR and clear state.
+function discardCheckout(hard){
+  if(_discarding)return; _discarding=true;
+  try{ api('/api/checkout/discard',{soft:!hard}).finally(()=>{_discarding=false}); }
+  catch(e){ _discarding=false; }
+}
+function selectAccount(p){if(_selPhone!==p){discardCheckout(true);resetOrderFlow();}_selPhone=p;renderAccList();toast('Account selected','suc');
+  // Remember this choice so re-opening the app keeps it selected (fire-and-forget).
+  try{api('/api/account/select',{phone:p});}catch(e){}
+  switchTab('order',true)}
+async function delAccount(p){if(!await confirmSheet({title:'Delete Account?',body:p+' will be removed from your saved accounts.',ok:'Delete',danger:true,icon:'trash'}))return;L(true);const r=await api('/api/account/delete',{phone:p});L(false);if(r&&r.ok){toast('Deleted','suc');if(_selPhone===p){_selPhone=null;resetOrderFlow();try{api('/api/account/select',{phone:''});}catch(e){}}renderAccount()}else toast(friendly(r?.error)||'Failed','err')}
+function toggleAcc(id){$(id).classList.toggle('open')}
+
+// Real-time number check: as soon as a full 10-digit number is typed, ask Meesho's
+// phone-book checker whether it's already registered — so the user knows BEFORE
+// spending an OTP. Debounced so it fires once the number stops changing.
+let _numChkTimer=null, _numChkLast='';
+function onPhoneInput(){
+  const el=$('lg-phone'); if(!el) return;
+  const num=(el.value||'').replace(/\D/g,'');
+  const box=$('lg-numchk'); if(!box) return;
+  clearTimeout(_numChkTimer);
+  if(num.length<10){ box.innerHTML=''; _numChkLast=''; return; }
+  if(num===_numChkLast) return;         // already checked this exact number
+  box.innerHTML=`<div class="hint" style="margin:2px 0 8px;display:flex;align-items:center;gap:6px">${ico('refresh',13,'var(--text3)')} Checking this number on Meesho…</div>`;
+  _numChkTimer=setTimeout(async()=>{
+    _numChkLast=num;
+    const r=await api('/api/check',{number:num});
+    // Only render if the input still holds the same number (user may have edited).
+    if(($('lg-phone').value||'').replace(/\D/g,'')!==num) return;
+    const b=$('lg-numchk'); if(!b) return;
+    const res=(r&&r.ok&&r.results&&r.results[0])||null;
+    if(!res || res.registered===null || res.registered===undefined){
+      b.innerHTML=`<div class="hint" style="margin:2px 0 8px;color:var(--text3)">Couldn't check this number right now — you can still continue.</div>`;
+      return;
+    }
+    if(res.registered){
+      b.innerHTML=`<div class="warn-card" style="margin:2px 0 8px"><div class="warn-ic">${ico('alert',16,'var(--orange)')}</div><div class="warn-tx"><div class="warn-h" style="color:var(--orange);font-size:12.5px">Already registered on Meesho</div><div class="warn-b" style="font-size:11px">This number already exists on Meesho — the welcome bonus may not apply. A fresh number is safer.</div></div></div>`;
+    }else{
+      b.innerHTML=`<div class="bonus-ok" style="margin:2px 0 8px">${ico('check',15)}<span><b>Fresh number</b> — not registered on Meesho yet.</span></div>`;
+    }
+  },600);
+}
+
+// Welcome-bonus tier the user picks. Default 180 = max off. It's a MINIMUM floor —
+// the hunt always chases the lowest UPI at or above the picked tier.
+let _selTier=180;
+function selTier(t){
+  _selTier=t;
+  document.querySelectorAll('#lg-tiers .tier-opt').forEach(o=>o.classList.toggle('sel',Number(o.dataset.tier)===t));
+  haptic('light');
+}
+
+async function loginStart(){
+  const phone=$('lg-phone').value.trim();if(!phone){toast('Enter phone number','err');return}
+  // Tier = a MINIMUM floor; the hunt always chases the lowest UPI at/above it. It
+  // keeps searching until it finds the ₹9 tier, so allow a long timeout (the ₹9
+  // session is ~10% rare — worst case it hunts for a couple of minutes).
+  toast('Finding the lowest UPI price — this can take a minute…','info');
+  L(true);const r=await api('/api/login/start',{phone,referral:$('lg-ref').value.trim(),tier:_selTier},{timeout:240000});L(false);
+  if(!r||!r.ok){
+    // Distinguish a NETWORK/proxy failure (retry same number) from a genuine
+    // below-threshold / bad number (try a different one).
+    const isNet=!r || r.retry || r.error==='network';
+    const ph=(r&&r.phone)?r.phone.replace('+91',''):'';
+    if(isNet){
+      $('login-box').innerHTML=`<div class="warn-card"><div class="warn-ic">${ico('refresh',20,'var(--orange)')}</div><div class="warn-tx"><div class="warn-h" style="color:var(--orange)">Network busy — try again</div><div class="warn-b">Couldn't reach Meesho just now. This is a connection hiccup, not your number. Tap retry.</div></div></div>
+        <div class="field"><label class="flbl">Phone Number</label><input class="inp" id="lg-phone" inputmode="numeric" maxlength="10" oninput="_num(this,10)" value="${esc(ph)}" placeholder="10-digit mobile"></div>
+        <div class="field"><label class="flbl">Referral (optional)</label><input class="inp" id="lg-ref" placeholder="Link or code — leave blank to skip"></div>
+        <button class="btn btn-m" onclick="loginStart()">${svg('refresh')} Retry</button>`;
+      haptic('heavy');return;
+    }
+    const msg=friendly(r?.error)||'Could not check offers';
+    $('login-box').innerHTML=`<div class="warn-card err"><div class="warn-ic">${ico('alert',20,'var(--red)')}</div><div class="warn-tx"><div class="warn-h">Not eligible</div><div class="warn-b">${esc(msg)}</div></div></div>
+      <div class="field"><label class="flbl">Phone Number</label><input class="inp" id="lg-phone" inputmode="numeric" maxlength="10" oninput="_num(this,10)" placeholder="10-digit mobile"></div>
+      <div class="field"><label class="flbl">Referral (optional)</label><input class="inp" id="lg-ref" placeholder="Link or code — leave blank to skip"></div>
+      <button class="btn btn-m" onclick="loginStart()">${svg('gift')} Check Another Number</button>`;
+    haptic('heavy');return;
+  }
+  // Show the REAL result the hunt landed: the lowest UPI (pay) amount + the discount.
+  // This is what the user actually cares about ("UPI ekdom kam"). r.upi_amount is the
+  // real pay amount on the reference product; r.fod_value is the applied discount.
+  const gotCheap=(r.upi_amount!=null && r.upi_amount<=15);
+  const topPill=gotCheap
+    ? `<span class="pill pill-green" style="font-size:9px;padding:2px 7px;margin-left:2px">${ico('check',10)} BEST</span>`
+    : `<span class="pill pill-orange" style="font-size:9px;padding:2px 7px;margin-left:2px">${ico('gift',10)} FOUND</span>`;
+  const headline=(r.upi_amount!=null)?`Pay only ₹${esc(r.upi_amount)} on UPI`:`₹${esc(r.fod_value||0)} OFF`;
+  const subLine=(r.fod_value>0)
+    ? `₹${esc(r.fod_value)} welcome discount · exact price shows on the bill`
+    : `Best available for this number · shows on the bill`;
+  // Two honest signals, shown together when relevant:
+  //   1) r.registered  → the phone-book checker says this number is ALREADY on Meesho.
+  //   2) r.fod_value<=0 → the real hunted discount is 0 (no welcome bonus applies).
+  // A registered number CAN still carry a live discount, so we show whichever is true.
+  const hasNoFod=(!r.fod_value||r.fod_value<=0);
+  let regWarn='';
+  if(r.registered){
+    regWarn+=`<div class="warn-card">${ico('alert',18,'var(--orange)')}<div class="warn-tx"><div class="warn-h" style="color:var(--orange)">Already registered on Meesho</div><div class="warn-b">This number already exists on Meesho. The welcome bonus only applies to a NEW number that hasn't ordered — use a fresh number to be sure of the discount.</div></div></div>`;
+  }
+  if(hasNoFod){
+    regWarn+=`<div class="warn-card">${ico('alert',18,'var(--orange)')}<div class="warn-tx"><div class="warn-h" style="color:var(--orange)">No welcome discount on this number</div><div class="warn-b">Meesho isn't giving this number a first-order discount right now. Login &amp; ordering still work — you'll just pay the normal price. Try a different fresh number for the bonus.</div></div></div>`;
+  }
+  const fodHtml=`<div class="card" style="background:var(--m-bg);border-color:var(--m-bg2)"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:12px;background:var(--m-bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('gift',22,'var(--m-d)')}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><div style="font-weight:800;font-size:16px;color:var(--m-d)">${headline}</div>${topPill}</div><div style="font-size:11.5px;color:var(--text2);font-weight:500;margin-top:2px">${subLine}</div></div></div></div>`;
+  $('login-box').innerHTML=regWarn+fodHtml+`<div class="tc" style="margin:12px 0;font-size:13px;font-weight:600">OTP will be sent to <b>${esc(r.phone)}</b></div>
+    <button class="btn btn-m" onclick="loginSendOtp()">${svg('phone')} Send OTP</button>
+    <button class="btn btn-ghost mt10" onclick="renderAccount()">Change Number</button>`;
+  haptic('light');
+}
+async function loginSendOtp(){
+  L(true);const r=await api('/api/login/send_otp',{});L(false);
+  if(!r||!r.ok){toast(friendly(r?.error)||'Failed to send OTP','err');return}
+  $('login-box').innerHTML=`<div class="tc" style="margin:6px 0 14px;font-size:13px;font-weight:500">OTP sent to <b>${esc(r.phone)}</b> via <b>${esc(r.mode)}</b></div>
+    <div class="field"><label class="flbl">Enter OTP</label><input class="inp otp" id="lg-otp" inputmode="numeric" maxlength="6" oninput="_num(this,6)" placeholder="Enter code"></div>
+    <button class="btn btn-m" onclick="loginVerify()">${svg('check')} Verify & Save</button>`;
+  setTimeout(()=>$('lg-otp')?.focus(),200);
+}
+async function loginVerify(){
+  const otp=$('lg-otp').value.trim();if(otp.length<4){toast('Enter the OTP','err');return}
+  L(true);const r=await api('/api/login/verify',{otp});L(false);
+  if(!r||!r.ok){toast(friendly(r?.error)||'Verification failed','err');return}
+  _selPhone=r.phone;
+  // Show the account added, then a CLEAR bonus confirmation sheet so the user
+  // knows up-front whether the welcome bonus will actually apply (new number) or
+  // not (already-registered) — instead of finding out only at checkout.
+  toast('Account added · '+r.phone,'suc');
+  const ok=r.bonus_ok;
+  openSheet(`<div class="sheet-h"><div class="st">Account added</div><button class="sheet-x" onclick="closeSheet();renderAccount()">${svg('x')}</button></div>`+
+    `<div style="padding:2px 2px 8px">`+
+    `<div class="${ok?'bonus-ok':'bonus-no'}" style="margin:0 0 14px">${ico(ok?'gift':'alert',16)}<span>${esc(r.bonus_msg||'')}</span></div>`+
+    `<button class="btn btn-m" onclick="closeSheet();switchTab('order',true)">${svg('cart')} ${ok?'Start ordering':'Order anyway'}</button>`+
+    `<button class="btn btn-ghost mt10" onclick="closeSheet();renderAccount()">Back to accounts</button></div>`);
+}
+async function importJson(){
+  let obj;try{obj=JSON.parse($('js-in').value.trim())}catch(e){toast('Invalid JSON','err');return}
+  L(true);const r=await api('/api/import',{data:obj});L(false);
+  if(r&&r.ok){toast('Account saved!','suc');renderAccount()}else toast(friendly(r?.error)||'Failed','err');
+}
+
+/* ═══════════ ADDRESS TAB ═══════════ */
+async function renderAddress(){
+  skeleton('pg-address',2);
+  const r=await api('/api/address');const ad=(r&&r.ok)?r.address:null;const ref=(r&&r.ok)?r.referral:'';
+  let h=`<div class="sec-title">Address & Referral<span>Delivery address used for all orders</span></div>`;
+  h+=`<div class="card"><div class="card-title"><div class="ct-ic">${svg('pin')}</div>Delivery Address</div>
+    <div class="field"><label class="flbl">Full Name</label><input class="inp" id="ad-name" value="${esc(ad?.name||'')}" placeholder="Recipient name"></div>
+    <div class="frow"><div class="field"><label class="flbl">Mobile</label><input class="inp" id="ad-mobile" inputmode="numeric" maxlength="10" oninput="_num(this,10)" value="${esc(ad?.mobile||'')}" placeholder="10-digit"></div>
+    <div class="field"><label class="flbl">Pincode</label><input class="inp" id="ad-pin" inputmode="numeric" maxlength="6" oninput="_num(this,6)" value="${esc(ad?.pin||'')}" placeholder="6-digit"></div></div>
+    <div class="frow"><div class="field"><label class="flbl">City</label><input class="inp" id="ad-city" placeholder="City" value="${esc(ad?.city||'')}"></div>
+    <div class="field"><label class="flbl">State</label><input class="inp" id="ad-state" placeholder="State" value="${esc(ad?.state||'')}"></div></div>
+    <div class="field"><label class="flbl">Address Line 1</label><input class="inp" id="ad-l1" value="${esc(ad?.line1||'')}" placeholder="House / street"></div>
+    <div class="field"><label class="flbl">Address Line 2</label><input class="inp" id="ad-l2" value="${esc(ad?.line2||'')}" placeholder="Area / landmark (required)"></div>
+    <button class="btn btn-m" onclick="saveAddress()">${svg('check')} Save Address</button></div>`;
+  h+=`<div class="card"><div class="card-title"><div class="ct-ic">${svg('link')}</div>Default Referral</div>
+    <div class="field"><input class="inp" id="ad-ref" value="${esc(ref||'')}" placeholder="Referral link or code (optional)"></div>
+    <button class="btn btn-m" onclick="saveReferral()">${svg('check')} Save Referral</button></div>`;
+  $('pg-address').innerHTML=h;
+}
+async function saveAddress(){
+  const b={name:$('ad-name').value.trim(),mobile:$('ad-mobile').value,pin:$('ad-pin').value,city:$('ad-city').value.trim(),state:$('ad-state').value.trim(),line1:$('ad-l1').value.trim(),line2:$('ad-l2').value.trim()};
+  // Client-side validation with a specific message + focus the wrong field.
+  const fail=(msg,id)=>{toast(msg,'err');const el=$(id);if(el)el.focus();return false};
+  if(!b.name)return fail('Enter your name','ad-name');
+  if(b.mobile.length!==10)return fail('Enter a 10-digit mobile number','ad-mobile');
+  if(b.pin.length!==6)return fail('Pincode must be 6 digits','ad-pin');
+  if(!b.line1)return fail('Enter your address (house / street)','ad-l1');
+  if(!b.city)return fail('Enter your city','ad-city');
+  if(!b.state)return fail('Enter your state','ad-state');
+  L(true);const r=await api('/api/address/save',b);L(false);
+  if(r&&r.ok){toast('Address saved!','suc');renderAddress()}else toast(friendly(r?.error)||'Failed','err');
+}
+async function saveReferral(){L(true);const r=await api('/api/referral/save',{referral:$('ad-ref').value.trim()});L(false);if(r&&r.ok){toast(r.cleared?'Referral cleared':'Referral saved','suc');renderAddress()}else toast(friendly(r?.error)||'Failed','err')}
+
+/* ═══════════ ORDER TAB ═══════════ */
+let _cart=[]; let _cartErr=false; let _cartRelogin=false;
+async function renderOrder(){
+  // Drop a stale selection if that account no longer exists.
+  if(_selPhone && _accounts.length && !_accounts.some(a=>a.phone===_selPhone))_selPhone=null;
+  let h=`<div class="sec-title">Cart<span>${_selPhone?('Ordering from '+esc(_selPhone)):'Select an account, then add a product'}</span></div>`;
+  if(!_selPhone){
+    h+=emptyBox('user','No account selected','Go to the Account tab and pick a fresh account first.')+
+      `<div style="padding:0 16px"><button class="btn btn-outline" onclick="switchTab('account')">${svg('user')} Choose Account</button></div>`;
+    $('pg-order').innerHTML=h;return;
+  }
+  h+=`<div class="card" id="link-card"><div class="card-title"><div class="ct-ic">${svg('link')}</div>Add Product<span class="ct-sub">${esc(_selPhone)}</span></div>
+    <div class="field"><input class="inp" id="pd-link" placeholder="Paste Meesho product link"></div>
+    <button class="btn btn-m" onclick="fetchProduct()">${svg('bag')} Fetch Product</button>
+    <button class="btn btn-outline mt10" onclick="importMeeshoCart()">${svg('cart')} Load my Meesho cart</button></div>
+    <div id="prod-view"></div>
+    <div id="cart-view"></div>`;
+  $('pg-order').innerHTML=h;
+  if(_product)renderProduct();
+  loadCart();
+}
+
+/* ---- Search tab: find products by name, add directly ---- */
+let _searchTimer=null, _searchItems=[];
+async function renderSearch(){
+  let h=`<div class="sec-title">Search<span>${_selPhone?('Ordering from '+esc(_selPhone)):'Pick an account to search & add'}</span></div>`;
+  if(!_selPhone){
+    h+=emptyBox('search','No account selected','Go to the Account tab and pick a fresh account first.')+
+      `<div style="padding:0 16px"><button class="btn btn-outline" onclick="switchTab('account')">${svg('user')} Choose Account</button></div>`;
+    $('pg-search').innerHTML=h;return;
+  }
+  h+=`<div style="padding:0 16px 6px">
+    <div class="srch-bar"><span class="srch-bar-ic">${svg('search')}</span>
+      <input class="srch-input" id="sr-q" placeholder="Search e.g. oats, dry fruit, kurti" autocomplete="off" oninput="onSearchInput()" onkeydown="if(event.key==='Enter'){closeSugg();doSearch()}">
+      <button class="srch-go" onclick="closeSugg();doSearch()">${svg('chevR')}</button>
+    </div>
+    <div id="sr-sugg" class="search-sugg"></div>
+  </div>
+  <div id="sr-results"></div>`;
+  $('pg-search').innerHTML=h;
+  // restore previous results if the user comes back to the tab
+  if(_searchItems.length)renderSearchResults(_searchItems);
+  else $('sr-results').innerHTML=emptyBox('search','Search Meesho','Type a product name above and tap search.');
+}
+function closeSugg(){const s=$('sr-sugg');if(s)s.innerHTML=''}
+function onSearchInput(){
+  const q=($('sr-q')||{}).value||'';
+  clearTimeout(_searchTimer);
+  if(q.trim().length<2){closeSugg();return}
+  _searchTimer=setTimeout(async()=>{
+    const r=await api('/api/search/suggest',{phone:_selPhone,q:q.trim()});
+    const el=$('sr-sugg');if(!el)return;
+    const sg=(r&&r.ok&&r.suggestions)||[];
+    // Pass the query via a data attribute (browser-decoded on read) instead of
+    // interpolating into the onclick string — esc() HTML-encodes ' & < > so the
+    // old inline arg passed mangled entity text into pickSuggest and the search.
+    el.innerHTML=sg.slice(0,6).map(s=>`<div class="sugg-item" data-q="${esc(s)}" onclick="pickSuggest(this.dataset.q)">${svg('search')}<span>${esc(s)}</span></div>`).join('');
+  },350);  // debounce: fewer keystroke calls to the proxy (backend also caches per-prefix)
+}
+function pickSuggest(s){const i=$('sr-q');if(i)i.value=s;closeSugg();doSearch()}
+let _srchQ='', _srchCursor=null, _srchOffset=0, _srchSsid=null, _srchMore=false, _srchLoading=false;
+async function doSearch(){
+  const q=($('sr-q')||{}).value.trim();if(!q){toast('Type something to search','err');return}
+  const res=$('sr-results');if(res)res.innerHTML='<div style="padding:12px 16px"><div class="srch-grid"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div></div>';
+  _srchQ=q;_srchCursor=null;_srchOffset=0;_srchSsid=null;_searchItems=[];
+  const r=await api('/api/search',{phone:_selPhone,q});
+  if(!r||!r.ok){if(res)res.innerHTML='';toast(friendly(r?.error)||'Search failed','err');return}
+  _searchItems=r.items||[];
+  _srchCursor=r.cursor||null;_srchOffset=r.next_offset||0;_srchSsid=r.search_session_id||null;_srchMore=!!r.cursor;
+  if(!_searchItems.length){if(res)res.innerHTML=emptyBox('search','No results','Try a different word.');return}
+  renderSearchResults(_searchItems, r.corrected, q);
+}
+async function loadMoreSearch(){
+  if(_srchLoading||!_srchMore)return;
+  _srchLoading=true;
+  const btn=$('sr-more');if(btn){btn.disabled=true;btn.innerHTML='Loading…';}
+  const r=await api('/api/search',{phone:_selPhone,q:_srchQ,offset:_srchOffset,cursor:_srchCursor,search_session_id:_srchSsid});
+  _srchLoading=false;
+  if(r&&r.ok&&(r.items||[]).length){
+    const seen=new Set(_searchItems.map(x=>String(x.pid)));
+    const fresh=(r.items||[]).filter(x=>!seen.has(String(x.pid)));
+    _searchItems=_searchItems.concat(fresh);
+    _srchCursor=r.cursor||null;_srchOffset=r.next_offset||_srchOffset;_srchSsid=r.search_session_id||_srchSsid;_srchMore=!!r.cursor&&fresh.length>0;
+    renderSearchResults(_searchItems,'',_srchQ);
+  }else{_srchMore=false;renderSearchResults(_searchItems,'',_srchQ);}
+}
+function renderSearchResults(items, corrected, q){
+  const res=$('sr-results');if(!res)return;
+  const corr=(corrected&&corrected!==q)?`<div class="hint" style="margin:0 16px 8px">Showing results for <b>${esc(corrected)}</b></div>`:'';
+  const grid='<div class="srch-grid">'+items.map((it,i)=>{
+    const upi=it.upi!=null?('₹'+it.upi):('₹'+(it.price||'?'));
+    const off=it.discount_text?`<span class="srch-off">${esc(it.discount_text)}</span>`:'';
+    return `<div class="srch-card">
+      <div class="srch-img" style="background-image:url('${esc(it.image||'')}')" onclick="openSearchProduct('${it.pid}')"></div>
+      <div class="srch-name" onclick="openSearchProduct('${it.pid}')">${esc(it.name||'Product')}</div>
+      <div class="srch-price"><b>${upi}</b>${it.mrp?` <s>₹${it.mrp}</s>`:''}</div>
+      ${off}
+      <button class="srch-addbtn" id="sadd-${i}" onclick="openAddSheet('${it.pid}',${i})">${svg('plus')} Add</button>
+    </div>`;
+  }).join('')+'</div>';
+  const more=_srchMore?`<div style="padding:4px 16px 16px"><button class="btn btn-outline" id="sr-more" onclick="loadMoreSearch()">${svg('chevD')} Load More</button></div>`:'';
+  res.innerHTML=corr+grid+more;
+}
+function openSearchProduct(pid){ openAddSheet(pid); }
+// Tap "Add" (or a card) → slide up a bottom sheet with the product's image,
+// price, size/variation options, and an Add-to-Cart button.
+let _sheetVar=null, _sheetProd=null;
+async function openAddSheet(pid,i){
+  const btn=(i!=null)?$('sadd-'+i):null;
+  if(btn){btn.disabled=true;btn.innerHTML='…';}
+  const r=await api('/api/search/product',{phone:_selPhone,pid});
+  if(btn){btn.disabled=false;btn.innerHTML=svg('plus')+' Add';}
+  if(!r||!r.ok||!r.product){toast(friendly(r?.error)||'Product not found','err');return}
+  _sheetProd=r.product;_sheetVar=null;
+  const p=_sheetProd;const vars=p.variations||[];
+  const off=p.mrp&&p.cod?Math.round((1-p.cod/p.mrp)*100):0;
+  const img=(p.images||[]).filter(Boolean)[0]||'';
+  let h=`<div class="sheet-h"><div class="st">Add to Cart</div><button class="sheet-x" onclick="closeSheet()">${svg('x')}</button></div>
+    <div class="as-top">
+      <div class="as-img" style="background-image:url('${esc(img)}')"></div>
+      <div class="as-info">
+        <div class="as-name">${esc(p.name||'Product')}</div>
+        <div class="as-price"><b>${money(p.cod)}</b>${p.mrp?` <s>${money(p.mrp)}</s>`:''}${off>0?` <span class="as-off">${off}% off</span>`:''}</div>
+        ${p.upi?`<div class="as-upi">${ico('upi',11)} ${money(p.upi)} on UPI${p.cod>p.upi?` · save ${money(p.cod-p.upi)}`:''}</div>`:''}
+        <div class="as-stock ${p.in_stock!==false?'ok':'no'}">${ico(p.in_stock!==false?'check':'x',11)} ${p.in_stock!==false?'In stock':'Out of stock'}</div>
+      </div>
+    </div>`;
+  if(vars.length){
+    h+=`<div class="as-vtitle">Select Size / Variation</div><div class="as-vgrid" id="as-vgrid">`;
+    vars.forEach((v,vi)=>{const price=v.upi||v.cod;h+=`<div class="var-chip ${v.in_stock?'':'oos'}" data-i="${vi}" onclick="${v.in_stock?`selSheetVar(${vi})`:''}">${esc(v.name)}${price?`<small>${money(price)}</small>`:''}</div>`});
+    h+=`</div>`;
+  }
+  h+=`<div class="as-qtyrow"><span class="as-qtylbl">Quantity</span>
+    <div class="as-qty">
+      <button class="qty-btn" onclick="sheetQty(-1)" aria-label="Decrease">${ico('minus',14,'var(--m-d)')}</button>
+      <span class="as-qtyv" id="as-qtyv">1</span>
+      <button class="qty-btn" onclick="sheetQty(1)" aria-label="Increase">${ico('plus',14,'var(--m-d)')}</button>
+    </div></div>`;
+  h+=`<div class="as-foot"><button class="btn btn-m" id="as-add" onclick="sheetAddToCart()">${svg('cart')} Add to Cart</button></div>`;
+  openSheet(h);
+  _sheetQty=1;
+  if(vars.length===1)selSheetVar(0);
+}
+// Units chosen in the add sheet. Sent with cart/add so the order is placed for
+// what the user actually picked — previously the quantity was never sent at all
+// and every single-product order went out as one unit.
+let _sheetQty=1;
+const SHEET_QTY_MAX=10;
+function sheetQty(d){
+  const n=Math.max(1,Math.min(SHEET_QTY_MAX,_sheetQty+d));
+  if(n===_sheetQty)return;
+  _sheetQty=n;
+  const el=$('as-qtyv'); if(el)el.textContent=String(n);
+  haptic('light');
+}
+function selSheetVar(i){_sheetVar=i;document.querySelectorAll('#as-vgrid .var-chip').forEach(c=>c.classList.toggle('sel',+c.dataset.i===i));haptic('light')}
+async function sheetAddToCart(){
+  const p=_sheetProd;if(!p)return;
+  const vars=p.variations||[];
+  if(vars.length>1 && _sheetVar===null){toast('Select a size first','err');return}
+  const vi=vars.length?(_sheetVar===null?0:_sheetVar):'default';
+  const btn=$('as-add');if(btn){btn.disabled=true;btn.innerHTML='Adding…';}
+  const r=await api('/api/cart/add',{phone:_selPhone,variation:vi,quantity:_sheetQty});
+  if(r&&r.ok){
+    haptic('light');toast(_sheetQty>1?`Added ${_sheetQty} to cart`:'Added to cart','suc');
+    _cart=r.items||[];_cartErr=false;
+    closeSheet();
+  }else{
+    toast(friendly(r?.error)||'Could not add','err');
+    if(btn){btn.disabled=false;btn.innerHTML=svg('cart')+' Add to Cart';}
+  }
+}
+async function fetchProduct(){
+  const link=$('pd-link').value.trim();if(!link){toast('Paste a product link','err');return}
+  L(true);const r=await api('/api/product',{phone:_selPhone,link});L(false);
+  if(!r||!r.ok||!r.product){toast(friendly(r?.error)||'Product not found','err');return}
+  _product=r.product;_selVar=null;_summary=null;renderProduct();
+}
+async function loadCart(){
+  if(!_selPhone){_cart=[];_cartErr=false;renderCartSection();return}
+  if(!_summary){const cv=$('cart-view');if(cv&&!_cart.length)cv.innerHTML='<div class="sk sk-card"></div>';}
+  const r=await api('/api/cart',{phone:_selPhone});
+  // Distinguish a genuinely-empty cart from an unreachable/expired read — the
+  // backend flags the latter (cart_unreachable/retry). Don't show "empty" then.
+  if(r&&r.ok){_cart=r.items||[];_cartErr=false;_cartRelogin=false;}
+  else{_cartErr=true;_cartRelogin=(r&&(r.error==='session_expired'||r.relogin))||false;}
+  renderCartSection();
+}
+async function importMeeshoCart(){
+  L(true);const r=await api('/api/cart/import',{phone:_selPhone});L(false);
+  if(!r||!r.ok){toast(friendly(r?.error)||'Nothing to import','err');return}
+  // Clear any leftover checkout-summary / cart-error state, else renderCartSection
+  // short-circuits to a blank/error view and the loaded items never show ("Loaded
+  // 1 item" toast but empty cart).
+  _summary=null;_cartErr=false;_cart=r.items||[];
+  renderCartSection();haptic('light');
+  toast(r.added>0?('Loaded '+r.added+' item'+(r.added>1?'s':'')+' from Meesho'):'Already in cart','suc');
+}
+function renderCartSection(){
+  const el=$('cart-view');if(!el)return;
+  // On the checkout screen (_summary set) the cart list is hidden to avoid a
+  // duplicate below the order summary. Keep it cleared, don't refill.
+  if(_summary){el.innerHTML='';return}
+  // Unreachable/expired read — offer a retry instead of a misleading empty cart.
+  if(_cartErr&&_cartRelogin){el.innerHTML=emptyBox('user',"Session expired","This account's session expired. Re-login this number once in the Account tab to continue.")+`<div style="padding:0 16px"><button class="btn btn-outline" onclick="switchTab('account')">${svg('user')} Go to Account</button></div>`;return}
+  if(_cartErr){el.innerHTML=emptyBox('cart',"Couldn't load your cart","Connection issue — please try again.")+`<div style="padding:0 16px"><button class="btn btn-outline" onclick="loadCart()">${svg('refresh')} Retry</button></div>`;return}
+  if(!_cart.length){el.innerHTML=emptyBox('cart','Your cart is empty','Paste a product link above to add items.');return}
+  const n=_cart.length;
+  const total=_cart.reduce((s,i)=>s+(i.cod||0)*(i.quantity||1),0);
+  let h=`<div class="card"><div class="card-title"><div class="ct-ic">${svg('cart')}</div>Your Cart<span class="ct-sub">${n} item${n>1?'s':''}</span></div>`;
+  h+=_cart.map(i=>{const q=i.quantity||1;const mx=i.max_quantity||0;const atMax=mx>0&&q>=mx;return `<div class="cart-row">
+    <div class="cart-thumb">${i.image?`<img src="${esc(i.image)}" onerror="this.remove()">`:svg('bag')}</div>
+    <div class="cart-info"><div class="cart-nm">${esc(i.name)}</div><div class="cart-mt">${i.variation?esc(i.variation):'Free Size'} · ${money(i.cod)}</div>
+      <div class="qty-step"><button class="qty-btn" onclick="changeQty('${esc(i.id)}',-1)" aria-label="Decrease">${q<=1?ico('trash',13,'var(--red)'):ico('minus',14,'var(--m-d)')}</button>
+      <span class="qty-val">${q}</span>
+      <button class="qty-btn ${atMax?'dis':''}" ${atMax?'disabled':''} onclick="changeQty('${esc(i.id)}',1)" aria-label="Increase">${ico('plus',14,'var(--m-d)')}</button></div>
+    </div>
+    <div class="cart-price">${money((i.cod||0)*q)}</div></div>`;}).join('');
+  h+=`<div class="cart-total-bar"><span class="ctb-l">Total</span><span class="ctb-r">${money(total)}</span></div>`;
+  h+=`<button class="btn btn-m mt14" onclick="cartCheckout()">${svg('chevR')} Proceed to Checkout</button></div>`;
+  el.innerHTML=h;
+}
+async function addToCart(){
+  if(_busy)return;_busy=true;
+  try{
+    const vars=_product.variations||[];
+    if(vars.length>1 && _selVar===null){toast('Select a size first','err');return}
+    const vi=vars.length?(_selVar===null?0:_selVar):'default';
+    L(true);const r=await api('/api/cart/add',{phone:_selPhone,variation:vi});L(false);
+    if(!r||!r.ok){toast(friendly(r?.error)||'Could not add','err');return}
+    _cart=r.items||[];_cartErr=false;_product=null;_selVar=null;
+    $('prod-view').innerHTML='';if($('pd-link'))$('pd-link').value='';
+    toast('Added to cart','suc');renderCartSection();haptic('light');
+  }finally{_busy=false;}
+}
+async function removeCart(id){L(true);const r=await api('/api/cart/remove',{phone:_selPhone,id});L(false);if(r&&r.ok){_cart=r.items||[];renderCartSection()}else toast(friendly(r?.error)||'Failed','err')}
+async function changeQty(id,delta){
+  if(_busy)return;
+  // Decrementing the last unit removes the item — confirm before deleting.
+  const it=_cart.find(x=>String(x.id)===String(id));
+  if(delta<0 && it && (it.quantity||1)<=1){
+    if(!await confirmSheet({title:'Remove item?',body:esc(it.name||'This item')+' will be removed from your cart.',ok:'Remove',danger:true,icon:'trash'}))return;
+  }
+  _busy=true;L(true);
+  const r=await api('/api/cart/qty',{phone:_selPhone,id,delta});
+  L(false);_busy=false;
+  if(r&&r.ok){_cart=r.items||[];renderCartSection();haptic('light');if(r.max_reached&&delta>0)toast('Max quantity reached','info')}
+  else toast(friendly(r?.error)||'Could not update quantity','err');
+}
+async function cartCheckout(){
+  if(_checkoutBusy)return;  // in-flight guard: block a double-tap re-minting two carts
+  _checkoutBusy=true;
+  L(true);
+  try{
+    const r=await api('/api/cart/checkout',{});
+    if(r&&r.error==='no_slots'){noSlots();return}
+    if(!r||!r.ok){toast(friendly(r?.error)||'Checkout failed','err');return}
+    if(r.skipped&&r.skipped.length)toast('Skipped: '+r.skipped.join(', '),'err');
+    _summary=r;renderCheckout(r);
+  }finally{L(false);_checkoutBusy=false;}
+}
+function renderProduct(){
+  const p=_product;const off=p.mrp&&p.cod?Math.round((1-p.cod/p.mrp)*100):0;
+  const vars=p.variations||[];
+  const imgList=(p.images||[]).filter(Boolean);
+  let imgs=imgList.map(u=>`<img loading="lazy" src="${esc(u)}" onerror="this.style.display='none'">`).join('')||`<div style="height:210px;display:flex;align-items:center;justify-content:center;color:var(--text4)">${svg('bag')}</div>`;
+  const dots=imgList.length>1?`<div class="prod-dots" id="prod-dots">${imgList.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</div>`:'';
+  const save=(p.mrp&&p.cod&&p.mrp>p.cod)?p.mrp-p.cod:0;
+  let h=`<div class="prod"><div class="prod-card"><div class="prod-hero"><div class="prod-imgs" id="prod-imgs">${imgs}</div>${p.fod_value?`<div class="prod-fod">${ico('gift',12,'#fff')} ₹${p.fod_value} OFF</div>`:''}${dots}</div>
+    <div class="prod-body">
+    ${p.brand?`<div class="prod-brand">${esc(p.brand)}</div>`:''}
+    <div class="prod-name">${esc(p.name)}</div>
+    <div class="prod-price"><span class="pp">${money(p.cod)}</span>${p.mrp?`<span class="pm">${money(p.mrp)}</span>`:''}${off>0?`<span class="po">${off}% off</span>`:''}</div>
+    ${p.upi?`<div class="prod-upi">${ico('upi',12)} <b>${money(p.upi)}</b> on UPI${p.cod>p.upi?` · save ${money(p.cod-p.upi)}`:''}</div>`:''}
+    <div class="prod-meta">${p.supplier?`<span>${ico('user',11)} ${esc(p.supplier)}</span>`:''}<span class="${p.in_stock!==false?'ok':'no'}">${ico(p.in_stock!==false?'check':'x',11)} ${p.in_stock!==false?'In stock':'Out of stock'}</span>${p.cod_available!==false?`<span class="ok">${ico('cod',11)} COD</span>`:''}</div>`;
+  if(vars.length){
+    h+=`<div class="var-title">Select Size / Variation</div><div class="var-grid" id="var-grid">`;
+    vars.forEach((v,i)=>{const price=v.upi||v.cod;h+=`<div class="var-chip ${v.in_stock?'':'oos'}" data-i="${i}" onclick="${v.in_stock?`selectVar(${i})`:''}">${esc(v.name)}${price?`<small>${money(price)}</small>`:''}</div>`});
+    h+=`</div>`;
+  }
+  h+=`</div></div>
+    <div style="padding:0 16px"><button class="btn btn-m" onclick="addToCart()">${svg('cart')} Add to Cart</button></div></div>`;
+  const lc=$('link-card');if(lc)lc.style.display='';  // link card visible on the product screen
+  $('prod-view').innerHTML=h;
+  // carousel dots follow the scroll
+  const strip=$('prod-imgs'),dotsEl=$('prod-dots');
+  if(strip&&dotsEl){strip.addEventListener('scroll',()=>{const i=Math.round(strip.scrollLeft/strip.clientWidth);[...dotsEl.children].forEach((d,j)=>d.classList.toggle('on',j===i))},{passive:true})}
+  if(vars.length===1)selectVar(0);
+}
+function selectVar(i){_selVar=i;document.querySelectorAll('#var-grid .var-chip').forEach(c=>c.classList.toggle('sel',+c.dataset.i===i));haptic('light')}
+async function goCheckout(){
+  if(_checkoutBusy)return;  // ignore a double-tap so two concurrent summaries can't
+  const vars=_product.variations||[];  // re-mint two carts and flicker the offer
+  if(vars.length>1 && _selVar===null){toast('Select a size first','err');return}
+  const vi=vars.length?(_selVar===null?0:_selVar):'default';
+  _checkoutBusy=true;
+  L(true);
+  try{
+    const r=await api('/api/checkout/summary',{phone:_selPhone,variation:vi});
+    if(!r||!r.ok){toast(friendly(r?.error)||'Checkout failed','err');return}
+    _summary=r;renderCheckout(r);
+  }finally{L(false);_checkoutBusy=false;}
+}
+function renderCheckout(r){
+  _payMethod=r.cod_available?'cod':'upi';
+  const hasUpi=!!(r.upi&&r.upi<r.cod);
+  const youPay=(_payMethod==='cod')?r.cod:(r.upi||r.cod);
+  // Render the Order Summary from the ITEMS the server actually summed (r.items),
+  // not a possibly-stale client _cart — otherwise the item list can be empty or
+  // mismatched beside a real Bill total. Fall back to _cart only if the response
+  // didn't carry items.
+  const _items=(r.items&&r.items.length)?r.items:_cart;
+  const n=r.item_count||_items.length;
+
+  // Order Summary shows the product's ORIGINAL price (before the welcome/first-
+  // order discount), so the Bill Details discount below reads clearly (₹391 →
+  // −₹120 → ₹271). Users were confused when the top already showed the
+  // discounted price. Prefer mrp when it's higher than the payable price;
+  // otherwise fall back to the single-item bill Product Price, else the price.
+  const _billProd=(r.bill&&r.bill.product_price)||0;
+  const itemsHtml=_items.map(i=>{const q=i.quantity||1;
+    const orig=(i.mrp&&i.mrp>(i.cod||0))?i.mrp:((_items.length===1&&_billProd>0)?_billProd:(i.cod||0));
+    const showOrig=orig*q;
+    const showDisc=(i.cod||0)*q;
+    // Standard storefront convention: PAYABLE price bold, ORIGINAL struck-through
+    // above/beside it (not inverted). Shows both so the discount reads clearly,
+    // matching Bill Details, without the confusing "strike the price you pay".
+    const struck=(showDisc>0&&showDisc<showOrig)?`<span class="co-struck">${money(showOrig)}</span>`:'';
+    return `<div class="co-item">
+    <div class="co-thumb">${i.image?`<img src="${esc(i.image)}" onerror="this.remove()">`:svg('bag')}</div>
+    <div class="co-info"><div class="co-name">${esc(i.name)}</div><div class="co-meta">${i.variation?esc(i.variation):'Free Size'}${q>1?' · Qty '+q:''}</div></div>
+    <div class="co-line">${money(showDisc||showOrig)}${struck}</div></div>`;}).join('');
+
+  // Bill Details — built from the REAL Meesho price breakdown (r.bill), exactly
+  // like the app: Product Price, each discount line, then You Pay. Numbers add up.
+  const bill=r.bill||{};
+  const rows=bill.rows||[];
+  let billRows='';
+  if(rows.length){
+    rows.forEach(row=>{
+      const isDisc=row.kind==='discount';
+      const v=isDisc?('−'+money(Math.abs(row.value))):money(row.value);
+      billRows+=`<div class="irow"><span class="k">${esc(row.label)}</span><span class="v${isDisc?' disc':''}">${v}</span></div>`;
+    });
+  }else{
+    // fallback if breakdown missing
+    billRows=`<div class="irow"><span class="k">Order Total</span><span class="v">${money(r.cod)}</span></div>`;
+  }
+
+  let h=`<div class="prod">
+    <div class="card"><div class="card-title"><div class="ct-ic">${svg('cart')}</div>Order Summary<span class="ct-sub">${n} item${n>1?'s':''}</span></div>
+    ${itemsHtml}
+    </div>
+
+    <div class="card"><div class="card-title"><div class="ct-ic">${svg('receipt')}</div>Bill Details</div>
+    ${bill.bonus_applied?`<div class="bonus-ok">${ico('gift',15)}<span>Welcome bonus applied — you saved <b>${money(bill.total_discount)}</b></span></div>`:(bill.is_first_order===false?`<div class="bonus-no">${ico('alert',15)}<span>No welcome bonus on this account — it applies to the <b>first order</b> of a fresh number.</span></div>`:'')}
+    ${(bill.delivery_charge>0)?`<div class="warn-card" style="margin:0 0 8px"><div class="warn-ic">${ico('truck',16,'var(--orange)')}</div><div class="warn-tx"><div class="warn-h" style="color:var(--orange);font-size:12.5px">Delivery charge ${money(bill.delivery_charge)}</div><div class="warn-b" style="font-size:11px">This product adds a ${money(bill.delivery_charge)} delivery fee to your total. Free-delivery products keep the amount lower.</div></div></div>`:''}
+    ${billRows}
+    <div class="irow" style="margin-top:4px;padding-top:13px;border-top:1px solid var(--border2)"><span class="k">Cash on Delivery</span><span class="v" id="bill-cod">${money(r.cod)}</span></div>
+    ${hasUpi?`<div class="irow"><span class="k">Pay Online (UPI)</span><span class="v disc" id="bill-upi">${money(r.upi)} <span class="pill pill-green" style="font-size:9px;padding:1px 7px;margin-left:2px">CHEAPEST</span></span></div>`:''}
+    <div class="irow total"><span class="k">You Pay</span><span class="v" id="pay-amt2">${money(youPay)}</span></div>
+    <div style="font-size:11.5px;color:var(--text3);font-weight:600;margin-top:10px;display:flex;align-items:center;gap:5px">${r.free?`<span style="color:var(--green)">${ico('gift',13,'var(--green)')} Free order — no slot needed</span>`:((r.slots||0)>0?`${ico('ticket',13,'var(--m-d)')} This order uses 1 slot`:`<span style="color:var(--red)">${ico('alert',13,'var(--red)')} No slots left — buy in bot chat</span>`)}</div>
+    </div>
+
+    <div class="card"><div class="card-title"><div class="ct-ic">${svg('wallet')}</div>Payment Method</div>
+    <div class="pay-opt ${_payMethod==='cod'?'sel':''} ${r.cod_available?'':'dis'}" data-pay="cod" onclick="${r.cod_available?"setPay('cod')":''}"><div class="pay-ic">${svg('cod')}</div><div class="pay-txt"><div class="pt1">Cash on Delivery</div><div class="pt2">${r.cod_available?money(r.cod)+' · pay when it arrives':'Not available'}</div></div><div class="pay-radio"></div></div>
+    <div class="pay-opt ${_payMethod==='upi'?'sel':''}" data-pay="upi" onclick="setPay('upi')"><div class="pay-ic">${svg('upi')}</div><div class="pay-txt"><div class="pt1">UPI Online${hasUpi?' <span class="pill pill-green" style="font-size:8.5px;padding:1px 6px;vertical-align:middle">SAVE '+money(r.cod-r.upi)+'</span>':''}</div><div class="pt2">${r.upi?money(r.upi)+' · scan &amp; pay by QR':'Scan &amp; pay by QR'}</div></div><div class="pay-radio"></div></div>
+    </div>
+    <div style="padding:0 16px"><button class="btn btn-m" id="place-btn" onclick="placeOrder()">${svg('check')} Place Order · <span id="btn-amt">${money(youPay)}</span></button>
+    <button class="btn btn-ghost mt10" onclick="backToCart()">Back to Cart</button></div></div>`;
+  const lc=$('link-card');if(lc)lc.style.display='none';  // hide the fetch card at checkout
+  const cv=$('cart-view');if(cv)cv.innerHTML='';          // hide the cart list at checkout (avoid duplicate)
+  $('prod-view').innerHTML=h;
+}
+function setPay(m){_payMethod=m;document.querySelectorAll('.pay-opt').forEach(o=>o.classList.toggle('sel',o.dataset.pay===m));
+  if(_summary){const amt=money(m==='cod'?_summary.cod:(_summary.upi||_summary.cod));
+    ['pay-amt2','btn-amt'].forEach(id=>{const e=$(id);if(e)e.textContent=amt});}
+  haptic('light')}
+function noSlots(){toast('No slots left — buy slots in the bot chat (Buy Now).','err')}
+async function placeOrder(){
+  if(_busy)return;
+  if(!_summary?.free && (_summary?.slots||0)<=0){noSlots();return}
+  const btn=$('place-btn');
+  if(_payMethod==='cod'){
+    const amt=money(_summary?.cod);
+    if(!await confirmSheet({title:'Place COD Order?',body:'Cash on Delivery · pay '+amt+' when it arrives.',ok:'Place Order',icon:'cod',slot:true}))return;
+    _busy=true;if(btn){btn.disabled=true;btn.classList.add('loading')}
+    const r=await api('/api/checkout/cod',{});
+    _busy=false;if(btn){btn.disabled=false;btn.classList.remove('loading')}
+    if(r&&r.ok){orderSuccess(r)}else if(r?.error==='no_slots'){noSlots()}else toast(friendly(r?.error)||'Order failed','err');
+  }else{
+    _busy=true;if(btn){btn.disabled=true;btn.classList.add('loading')}
+    const r=await api('/api/checkout/upi',{});
+    _busy=false;if(btn){btn.disabled=false;btn.classList.remove('loading')}
+    if(r&&r.error==='no_slots'){noSlots();return}
+    if(!r||!r.ok){toast(friendly(r?.error)||'UPI setup failed','err');return}
+    showQr(r);
+  }
+}
+function backToCart(){if(_summary)discardCheckout();_summary=null;$('prod-view').innerHTML='';const lc=$('link-card');if(lc)lc.style.display='';renderCartSection();}
+function orderSuccess(r){
+  _product=null;_selVar=null;_summary=null;_cart=[];
+  // If the success fired while the user is on another tab (e.g. auto-poll), the
+  // Order page is hidden — switch to it so the confirmation is actually seen.
+  if(_tab!=='order')switchTab('order',true);
+  const pv=$('prod-view');
+  const card=`<div class="prod"><div class="card tc" style="padding:26px 20px">
+    <div class="success-anim">${svg('check')}</div>
+    <div style="font-size:18px;font-weight:800">Order Placed!</div>
+    <div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:4px">Order #${esc(r.order_num)}</div>
+    <div class="irow" style="margin-top:16px;text-align:left"><span class="k">Amount</span><span class="v">${money(r.amount)}</span></div>
+    <div class="irow" style="text-align:left"><span class="k">Status</span><span class="v"><span class="pill pill-green">${esc(r.status||'Confirmed')}</span></span></div>
+    <button class="btn btn-m mt14" onclick="switchTab('orders')">${svg('box')} View Orders</button>
+    <button class="btn btn-ghost mt10" onclick="switchTab('account')">Order More</button></div></div>`;
+  if(pv){pv.innerHTML=card}else{switchTab('orders',true)}
+  haptic('medium');toast('Order placed successfully!','suc');
+}
+function qrSet(cls,icon,text){const st=$('qr-st');if(!st)return;st.className='qr-status '+cls;st.innerHTML=ico(icon,13)+' '+esc(text)}
+function qrImgFail(img){
+  img.onerror=null;
+  var intent=img.getAttribute('data-intent')||'';
+  var d=document.createElement('div');
+  d.style.cssText='font-size:12px;color:var(--text3);text-align:center;padding:24px 8px';
+  if(intent){
+    // Build the link via DOM APIs — setAttribute safely handles any character in
+    // the UPI intent URL (a stray quote would otherwise break out of the href).
+    var a=document.createElement('a');
+    a.setAttribute('href',intent);
+    a.style.cssText='color:var(--m-d);font-weight:700';
+    a.textContent='Tap to pay in your UPI app';
+    d.appendChild(a);
+    d.appendChild(document.createElement('br'));
+    d.appendChild(document.createTextNode('or use COD instead.'));
+  }else{
+    d.textContent='QR image unavailable — or use COD instead.';
+  }
+  img.replaceWith(d);
+}
+function showQr(r){
+  _qrIntent=r.intent||''; _qrUrl=r.qr_url||'';
+  const qs=`<div class="qr-wrap"><div class="qr-amt">${money(r.amount)}</div><div class="qr-vpa">Pay to ${esc(r.vpa)}</div>
+    <div class="qr-img"><img src="${esc(_qrUrl)}" alt="QR" data-intent="${esc(_qrIntent)}" onerror="qrImgFail(this)"></div>
+    <div class="qr-status wait" id="qr-st">${ico('clock',13)} Awaiting payment</div>
+    <button class="btn btn-m" id="qr-act" onclick="checkPay('${esc(r.juspay_order_id)}',this)">${svg('refresh')} I've Paid — Check Status</button>
+    <div class="hint tc">Scan with any UPI app, pay <b>${money(r.amount)}</b>, then tap <b>I've Paid</b>.</div></div>`;
+  openSheet(`<div class="sheet-h"><div class="st">UPI Payment</div><button class="sheet-x" onclick="stopQrPoll();discardCheckout();closeSheet()">${svg('x')}</button></div>`+qs);
+  // Auto-poll so a paid user doesn't have to keep tapping — finalises on its own.
+  startQrPoll(r.juspay_order_id);
+}
+let _qrIntent='', _qrUrl='';
+let _qrPoll=null;         // setTimeout handle for the NEXT scheduled poll
+let _qrPollDelay=5000;    // current backoff delay (ms), grows each tick
+let _qrPollJp='';         // juspay order id of the active poll (for fast-reset re-arm)
+// EXPONENTIAL BACKOFF: hundreds of users all polling a fixed 5s interval was
+// 60-120 req/s sustained and starved new orders. Each tick now schedules the
+// NEXT one with a grown delay (5→8→13→20→25s, capped) via setTimeout, instead
+// of a fixed setInterval. Tapping "I've Paid" resets to the fast 5s cadence.
+const _QR_POLL_START=5000, _QR_POLL_MAX=25000;
+function _qrNextDelay(d){ return Math.min(Math.round(d*1.6), _QR_POLL_MAX); }
+function stopQrPoll(){if(_qrPoll){clearTimeout(_qrPoll);_qrPoll=null}_qrPollJp='';}
+function _qrTick(){
+  _qrPoll=null;
+  if(!_sheetOpen){stopQrPoll();return}
+  const jp=_qrPollJp;
+  checkPay(jp,null,true);
+  // reschedule the next poll with the grown delay (still open, still pending)
+  if(_sheetOpen&&_qrPollJp){ _qrPollDelay=_qrNextDelay(_qrPollDelay); _qrPoll=setTimeout(_qrTick,_qrPollDelay); }
+}
+function startQrPoll(jp){
+  stopQrPoll();
+  _qrPollJp=jp;
+  _qrPollDelay=_QR_POLL_START;
+  _qrPoll=setTimeout(_qrTick,_qrPollDelay);
+}
+async function checkPay(jp,btn,silent){
+  // A MANUAL "I've Paid" tap means the user just paid — reset the backoff to the
+  // fast cadence and RE-ARM the pending timer so we catch the confirmation
+  // quickly instead of waiting out a grown (up to 25s) delay.
+  if(!silent && _qrPollJp){
+    _qrPollDelay=_QR_POLL_START;
+    if(_qrPoll){clearTimeout(_qrPoll);_qrPoll=setTimeout(_qrTick,_qrPollDelay);}
+  }
+  // A MANUAL tap must give feedback even if a background auto-poll currently
+  // holds _busy — else the tap looks dead. Show "Checking…" then bail.
+  if(_busy){if(!silent)qrSet('wait','clock','Checking…');return;}
+  _busy=true;if(btn)btn.disabled=true;
+  if(!silent)qrSet('wait','clock','Checking…');
+  // Silent background poll → don't toast on a transient network blip (no spam).
+  const r=await api('/api/checkout/check',{juspay_order_id:jp},{silent:!!silent});
+  _busy=false;if(btn)btn.disabled=false;
+  if(!_sheetOpen)return;  // user closed the sheet — don't fire a surprise success
+  // A SILENT background poll whose order was superseded (the sheet reopened on a
+  // different order while this await was in flight) must not paint the old order's
+  // status onto the new sheet. Manual taps (silent=false) always show their result.
+  if(silent && _qrPollJp && jp!==_qrPollJp)return;
+  if(r&&r.ok&&r.status==='success'){stopQrPoll();qrSet('ok','check','Payment received');
+    setTimeout(()=>{if(_sheetOpen){closeSheet();orderSuccess({order_num:r.order_num,amount:r.amount,status:'Confirmed'})}},700);}
+  else if(r&&r.ok&&r.status==='failed'){stopQrPoll();qrSet('no','x',r.message||'Payment failed — try again or use COD');
+    const b=$('qr-act');if(b)b.outerHTML=`<button class="btn btn-outline" onclick="closeSheet();setPay('cod')">${svg('cod')} Pay with COD instead</button>`;}
+  else if(r&&r.ok&&r.status==='paid_unplaced'){qrSet('wait','clock',r.message||'Payment received — finalising…');}
+  // Route any raw gateway status (AUTHORIZING/PENDING_VBV/UNKNOWN/server_error)
+  // through friendly() so the user never sees a raw code.
+  else if(!silent){qrSet('no','x', r?friendly(r.message||r.detail||r.error):'Not received yet')}
+}
+
+/* ═══════════ ORDERS TAB ═══════════ */
+async function renderOrders(){
+  skeleton('pg-orders',3);
+  const r=await api('/api/orders'+(_selPhone?('?phone='+encodeURIComponent(_selPhone)):''));
+  const who=_selPhone?('Orders for '+_selPhone):'Select an account to view its orders';
+  let h=`<div class="sec-title">My Orders<span>${who}</span></div>`;
+  if(!r||!r.ok){$('pg-orders').innerHTML=h+errBox('renderOrders');return}
+  if(r.need_account){
+    $('pg-orders').innerHTML=h+emptyBox('user','No account selected','Pick an account in the Account tab to see its orders.')+
+      `<div style="padding:0 16px"><button class="btn btn-outline" onclick="switchTab('account')">${svg('user')} Choose Account</button></div>`;return;
+  }
+  const orders=r.orders||[];
+  if(!orders.length){
+    if(r.stale_session){
+      $('pg-orders').innerHTML=h+emptyBox('refresh',"Session expired","This account's session expired — tap Refresh in the Account tab to reload its orders.")+
+        `<div style="padding:0 16px"><button class="btn btn-outline" onclick="switchTab('account')">${svg('user')} Go to Account</button></div>`;return;
+    }
+    $('pg-orders').innerHTML=h+emptyBox('box','No orders yet','Orders placed on this account will appear here.');return}
+  h+='<div style="padding:0 16px">'+orders.map(o=>{
+    const pill=statusPill(o.status);
+    const thumb=o.image?`<img src="${esc(o.image)}" onerror="this.remove()">`:svg('box');
+    const sub=[o.product?esc(o.product):'', o.amount?money(o.amount):''].filter(Boolean).join(' · ') || esc(o.phone||'');
+    return `<div class="ord-card" onclick="showOrderDetail('${esc(o.order_num)}','${esc(o.phone||'')}')"><div class="ord-ic">${thumb}</div>
+      <div class="ord-info"><div class="ord-num">${o.product?esc(String(o.product)):('#'+esc(o.order_num))}</div><div class="ord-meta">${sub}</div></div>
+      <div>${pill}</div><div class="ord-chev">${svg('chevR')}</div></div>`;
+  }).join('')+'</div>';
+  $('pg-orders').innerHTML=h;
+}
+function statusPill(s){const k=(s||'').toLowerCase();let c='pill-gray';if(k.includes('deliver'))c='pill-green';else if(k.includes('ship')||k.includes('dispatch'))c='pill-m';else if(k.includes('cancel'))c='pill-red';else if(k.includes('order')||k.includes('confirm')||k.includes('placed'))c='pill-green';const label=(s||'Placed').replace(/\b\w/g,ch=>ch.toUpperCase());return `<span class="pill ${c}" style="text-transform:uppercase;letter-spacing:.4px;font-size:10px">${esc(label)}</span>`}
+async function showOrderDetail(num,phone){
+  L(true);const r=await api('/api/orders/'+encodeURIComponent(num)+(phone?('?phone='+encodeURIComponent(phone)):''));L(false);
+  if(!r||!r.ok){toast(friendly(r?.error)||'Not found','err');return}
+  const d=r.detail||{};const pr=d.product||{};const ad=d.address||{};const pay=d.payment||{};
+  _lastOrderAddr=ad;  // stash for the Change-Address form pre-fill
+  // Top timeline (Ordered -> Shipped -> Out for Delivery -> Delivered), with the
+  // current hub note (e.g. "Hooghly south") when present.
+  let tl=(d.timeline||[]).map(m=>`<div class="tl-item ${m.active?'now':m.completed?'done':''}"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-st">${esc(m.status)}${m.note?` · <span style="color:var(--m-d)">${esc(m.note)}</span>`:''}</div>${m.date?`<div class="tl-dt">${esc(m.date)}</div>`:''}</div>`).join('');
+  // Full-page order detail (opens as its own page, not a bottom sheet) — a back
+  // header returns to the Orders list, and there's room to breathe.
+  let h=`<div class="od-hd"><button class="od-back" onclick="switchTab('orders',true)">${svg('chevL')}</button><div class="od-title">ORDER #${esc(d.order_num||num)}</div></div>`;
+  h+=`<div class="od-body">`;
+  // Hero product card
+  h+=`<div class="card od-hero">
+    ${pr.image?`<img class="od-hero-img" src="${esc(pr.image)}" onerror="this.style.display='none'">`:`<div class="od-hero-img" style="display:flex;align-items:center;justify-content:center">${ico('bag',24,'var(--m-d)')}</div>`}
+    <div style="flex:1;min-width:0"><div class="od-hero-nm">${esc(pr.name||'Product')}</div>
+    <div class="od-hero-sub">${[pr.size?'Size '+esc(pr.size):'',pr.quantity?'Qty '+esc(pr.quantity):'',pr.price?'₹'+esc(pr.price):''].filter(Boolean).join('  ·  ')}</div></div></div>`;
+  // Status banner (coloured icon by state)
+  const st=(d.status_title||'').toLowerCase();
+  let sIco='clock',sCol='var(--m-d)',sBg='var(--m-bg)';
+  if(st.includes('deliver')){sIco='check';sCol='var(--green)';sBg='var(--green-bg)';}
+  else if(st.includes('ship')||st.includes('dispatch')||st.includes('way')){sIco='truck';sCol='var(--m-d)';sBg='var(--m-bg)';}
+  else if(st.includes('cancel')){sIco='x';sCol='var(--red)';sBg='var(--red-bg)';}
+  h+=`<div class="card od-status"><div class="od-status-ic" style="background:${sBg}">${ico(sIco,19,sCol)}</div>
+    <div class="od-status-tx"><div class="od-status-t" style="color:${sCol}">${esc((d.status_title||'Placed'))}</div>
+    ${(d.eta||d.status_sub)?`<div class="od-status-s">${d.eta?('Delivery by '+esc(d.eta)):(esc(d.status_sub)+' '+esc(d.status_date))}</div>`:''}</div></div>`;
+  // Tracking ID / carrier / live track link — THE piece users were missing.
+  if(d.tracking_id||d.courier||d.tracking_url){
+    h+=`<div class="card" style="margin:0 0 10px"><div class="card-title" style="margin-bottom:10px"><div class="ct-ic">${svg('truck')}</div>Tracking</div>`;
+    if(d.courier)h+=`<div class="irow"><span class="k">Carrier</span><span class="v">${esc(d.courier)}</span></div>`;
+    if(d.tracking_id)h+=`<div class="irow"><span class="k">Tracking ID</span><span class="v" style="user-select:all">${esc(d.tracking_id)}</span></div>`;
+    if(d.tracking_url)h+=`<div style="margin-top:10px"><button class="btn btn-outline" style="width:100%" onclick="window.open('${esc(d.tracking_url)}','_blank')">${svg('truck')} Track Live</button></div>`;
+    h+=`</div>`;
+  }
+  // Top milestones timeline
+  if(tl)h+=`<div class="card" style="margin:0 0 10px"><div class="card-title" style="margin-bottom:12px"><div class="ct-ic">${svg('truck')}</div>Timeline</div><div class="tl">${tl}</div></div>`;
+  // Detailed carrier scan history (collapsible)
+  if((d.scans||[]).length){
+    let scans=d.scans.map(s=>`<div class="tl-item ${s.active?'done':''}"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-st">${esc(s.status)}</div><div class="tl-dt">${esc(s.date)}${s.time?' · '+esc(s.time):''}</div></div>`).join('');
+    h+=`<div class="card" style="margin:0 0 10px"><div class="card-title" style="margin-bottom:6px;cursor:pointer;justify-content:space-between" onclick="this.parentNode.querySelector('.scanwrap').classList.toggle('open')"><span style="display:flex;align-items:center;gap:8px"><div class="ct-ic">${svg('truck')}</div>Shipment Updates (${d.scans.length})</span><span style="width:18px;height:18px">${svg('chevD')}</span></div><div class="scanwrap" style="max-height:0;overflow:hidden;transition:max-height .25s"><div class="tl" style="padding-top:8px">${scans}</div></div></div>`;
+  }
+  // Payment
+  if(pay.mode||pay.amount)h+=`<div class="card" style="margin:0 0 10px"><div class="card-title" style="margin-bottom:10px"><div class="ct-ic">${svg('gift')}</div>Payment</div>${pay.mode?`<div class="irow"><span class="k">Mode</span><span class="v">${esc(pay.mode)}</span></div>`:''}${pay.amount?`<div class="irow"><span class="k">Amount</span><span class="v">₹${esc(pay.amount)}</span></div>`:''}</div>`;
+  // Seller
+  if(d.seller)h+=`<div class="card" style="margin:0 0 10px"><div class="irow"><span class="k">Seller</span><span class="v">${esc(d.seller)}</span></div></div>`;
+  // Delivery address
+  if(ad.name){
+    const lines=[ad.line1,ad.line2,ad.landmark].filter(Boolean).map(x=>esc(x)).join('<br>');
+    const cityState=[ad.city,ad.state].filter(Boolean).map(x=>esc(x)).join(', ');
+    const cityLine=[cityState,ad.pin?('- '+esc(ad.pin)):''].filter(Boolean).join(' ');
+    h+=`<div class="card" style="margin:0 0 10px"><div class="card-title" style="margin-bottom:10px"><div class="ct-ic">${svg('pin')}</div>Delivery Address</div>
+      <div style="font-size:13.5px;font-weight:800">${esc(ad.name)}</div>
+      <div class="addr-body">${lines?lines+'<br>':''}${cityLine}</div>
+      ${ad.mobile?`<div class="addr-phone">${ico('phone',13)} ${esc(ad.mobile)}</div>`:''}</div>`;
+  }
+  // Actions (Change Address / Cancel) — grouped at the bottom, only when allowed.
+  const _oNum=esc(d.order_num||num), _oPh=esc(phone||_selPhone||'');
+  if(d.can_change_address||d.can_cancel){
+    h+=`<div class="od-actions">`;
+    if(d.can_change_address)h+=`<button class="btn btn-outline" onclick="openChangeAddr('${_oNum}','${_oPh}')">${svg('pin')} Change Address</button>`;
+    if(d.can_cancel)h+=`<button class="btn btn-danger" onclick="openCancelOrder('${_oNum}','${_oPh}')">${svg('x')} Cancel Order</button>`;
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  $('pg-order-detail').innerHTML=h;
+  // switch to the detail page WITHOUT re-rendering it (it's already built here).
+  _tab='order-detail';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  $('pg-order-detail').classList.add('active');
+  $('nav-orders')&&$('nav-orders').classList.add('active');  // keep Orders lit in nav
+  try{window.scrollTo(0,0);$('pg-order-detail').scrollTop=0;}catch(e){}
+}
+// Cancel Order — confirm sheet with a reason picker, then POST /api/order/cancel.
+let _cxOrder=null, _cxPhone=null, _cxReason=60;
+const CANCEL_REASONS=[
+  {id:60,t:'I changed my mind'},
+  {id:61,t:'Ordered by mistake'},
+  {id:62,t:'Found a better price elsewhere'},
+  {id:63,t:'Delivery is taking too long'},
+  {id:64,t:'Want to change size / product'},
+  {id:65,t:'Other reason'}
+];
+function openCancelOrder(orderNum,phone){
+  _cxOrder=orderNum;_cxPhone=phone;_cxReason=CANCEL_REASONS[0].id;
+  let h=`<div class="sheet-h"><div class="st">Cancel Order</div><button class="sheet-x" onclick="closeSheet()">${svg('x')}</button></div>
+    <div style="padding:0 2px">
+      <div class="hint" style="margin:0 0 12px">This cancels order <b>#${esc(orderNum)}</b>. Prepaid refund (if any) is handled by Meesho. Pick a reason:</div>
+      <div id="cx-reasons" class="cx-reasons">${CANCEL_REASONS.map((r,i)=>`<div class="cx-opt ${i===0?'sel':''}" data-id="${r.id}" onclick="selCancelReason(${r.id})">${esc(r.t)}</div>`).join('')}</div>
+      <div class="field mt10"><textarea class="inp" id="cx-comments" placeholder="Comments (optional)" style="min-height:56px"></textarea></div>
+    </div>
+    <div class="as-foot"><button class="btn btn-danger" id="cx-go" onclick="doCancelOrder()">${svg('x')} Confirm Cancel</button></div>`;
+  openSheet(h);
+}
+function selCancelReason(id){_cxReason=id;document.querySelectorAll('#cx-reasons .cx-opt').forEach(o=>o.classList.toggle('sel',+o.dataset.id===id));haptic('light')}
+async function doCancelOrder(){
+  const btn=$('cx-go');if(btn){btn.disabled=true;btn.innerHTML='Cancelling…';}
+  const comments=($('cx-comments')||{}).value?$('cx-comments').value.trim():'';
+  const r=await api('/api/order/cancel',{phone:_cxPhone,order_num:_cxOrder,reason_id:_cxReason,comments});
+  if(r&&r.ok){
+    haptic('heavy');toast(r.message||'Order cancelled','suc');closeSheet();
+    // Cancel is opened from the full-page order detail, so _tab is 'order-detail'
+    // (not 'orders') — go back to the refreshed list so the cancelled order no
+    // longer shows as active/cancellable.
+    switchTab('orders',true);
+  }else{
+    toast(friendly(r?.error)||'Could not cancel','err');
+    if(btn){btn.disabled=false;btn.innerHTML=svg('x')+' Confirm Cancel';}
+  }
+}
+// Change Address (post-order, before shipping): slide up a form pre-filled with the
+// current address; on save, calls /api/order/address (two-step Meesho update).
+let _chgOrder=null, _chgPhone=null, _chgAddr=null;
+function openChangeAddr(orderNum, phone){
+  _chgOrder=orderNum; _chgPhone=phone; _chgAddr=_lastOrderAddr||{};
+  const a=_chgAddr;
+  const F=(id,label,val,ph,extra)=>`<div class="field"><label class="flbl">${label}</label><input class="inp" id="${id}" value="${esc(val||'')}" placeholder="${ph||''}" ${extra||''}></div>`;
+  let h=`<div class="sheet-h"><div class="st">Change Address</div><button class="sheet-x" onclick="closeSheet()">${svg('x')}</button></div>
+    <div style="padding:0 2px">
+      <div class="hint" style="margin:0 0 10px">Update the delivery address for this order (only works before it ships).</div>
+      ${F('ca-name','Full Name',a.name,'Name')}
+      ${F('ca-mobile','Mobile',a.mobile,'10-digit mobile','inputmode="numeric" maxlength="10" oninput="_num(this,10)"')}
+      ${F('ca-pin','Pincode',a.pin,'6-digit pin','inputmode="numeric" maxlength="6" oninput="_num(this,6)"')}
+      ${F('ca-line1','Address (House / Street)',a.line1,'Flat, building, street')}
+      ${F('ca-line2','Area / Locality (optional)',a.line2,'Area, colony')}
+      ${F('ca-landmark','Landmark (optional)',a.landmark,'Near…')}
+      <div class="frow"><div style="flex:1">${F('ca-city','City',a.city,'City')}</div><div style="flex:1">${F('ca-state','State',a.state,'State')}</div></div>
+    </div>
+    <div class="as-foot"><button class="btn btn-m" id="ca-save" onclick="saveChangeAddr()">${svg('check')} Update Address</button></div>`;
+  openSheet(h);
+}
+async function saveChangeAddr(){
+  const g=id=>($(id)||{}).value?($(id).value.trim()):'';
+  const payload={phone:_chgPhone,order_num:_chgOrder,
+    name:g('ca-name'),mobile:g('ca-mobile'),pin:g('ca-pin'),
+    line1:g('ca-line1'),line2:g('ca-line2'),landmark:g('ca-landmark'),
+    city:g('ca-city'),state:g('ca-state')};
+  if(!payload.name||!payload.mobile||!payload.pin||!payload.city||!payload.state||!payload.line1){toast('Fill name, mobile, pin, city, state and address','err');return}
+  if(payload.pin.length!==6){toast('Pincode must be 6 digits','err');return}
+  const btn=$('ca-save');if(btn){btn.disabled=true;btn.innerHTML='Updating…';}
+  const r=await api('/api/order/address',payload);
+  if(r&&r.ok){
+    haptic('light');toast(r.message||'Address updated','suc');closeSheet();
+    // Re-fetch the order detail so the updated address is reflected (the change
+    // sheet opens from the detail page and otherwise leaves it stale).
+    if(_chgOrder)showOrderDetail(_chgOrder,_chgPhone);
+  }else{
+    toast(friendly(r?.error)||'Could not change address','err');
+    if(btn){btn.disabled=false;btn.innerHTML=svg('check')+' Update Address';}
+  }
+}
+function _toggleScans(el){const w=el.parentNode.querySelector('.scanwrap');if(w)w.classList.toggle('open')}
+
+/* ---- helpers ---- */
+function emptyBox(ic,t,p){return `<div class="empty"><div class="e-ic">${svg(ic)}</div><h3>${esc(t)}</h3><p>${esc(p)}</p></div>`}
+function errBox(retryFn){return `<div class="empty"><div class="e-ic">${svg('refresh')}</div><h3>Couldn't load</h3><p>Check your connection and try again.</p><div style="margin-top:14px"><button class="btn btn-outline" style="width:auto;padding:0 20px;margin:0 auto" onclick="${retryFn}()">${svg('refresh')} Retry</button></div></div>`}
+
+/* ---- boot ---- */
+(async function(){
+  if(!TOKEN){document.body.innerHTML=`<div id="gate"><div class="g-ic">${svg('bag')}</div><h2>Open from Telegram</h2><p>Please launch this app using the button inside the Meesho bot chat.</p></div>`;return}
+  try{const w=window.Telegram?.WebApp;if(w){w.ready();w.expand();w.setHeaderColor?.('#C21876')}}catch(e){}
+  // Restore a saved cart: if the account has an unfinished cart, land on Order.
+  const s=await api('/api/session');
+  if(s&&s.ok){setChip(s.accounts);}
+  // Remember the last-selected account across app re-opens / bot restarts. Set it
+  // BEFORE any early return so the Account page renders populated underneath.
+  if(s&&s.ok&&s.last_phone){_selPhone=s.last_phone;}
+  // Resume a paid-but-unfinalised UPI payment (user paid then closed the app).
+  try{
+    const pr=await api('/api/pending');
+    if(pr&&pr.ok&&pr.pending&&pr.pending.length){
+      // Render the base Account page FIRST so dismissing the sheet doesn't leave a
+      // blank tab, then open the resume sheet as an overlay.
+      renderAccount();
+      resumePending(pr.pending[0]);
+      return;
+    }
+  }catch(e){}
+  if(s&&s.ok&&s.cart_count>0&&s.cart_phone){_selPhone=s.cart_phone;switchTab('order',true);return}
+  renderAccount();
+})();
+function resumePending(p){
+  openSheet(`<div class="sheet-h"><div class="st">Finish your payment</div><button class="sheet-x" onclick="closeSheet()">${svg('x')}</button></div>`+
+    `<div style="padding:4px 4px 8px"><div class="empty"><div class="e-ic">${svg('clock')}</div><h3>Pending UPI payment</h3><p>You have an unfinished payment${p.amount?(' of '+money(p.amount)):''}${p.product?(' for '+esc(p.product)):''}. If you already paid, tap below to finalise your order.</p></div>`+
+    `<button class="btn btn-m" onclick="checkPay('${esc(p.juspay_order_id)}',this)">${svg('check')} I've Paid — Check Status</button>`+
+    `<button class="btn btn-ghost mt10" onclick="cancelPending('${esc(p.juspay_order_id)}')">Cancel this payment</button></div>`);
+  // Auto-poll so a captured-but-unfinalised payment completes without a manual tap.
+  if(typeof startQrPoll==='function')startQrPoll(p.juspay_order_id);
+}
+async function cancelPending(jp){
+  if(!await confirmSheet({title:'Cancel this payment?',body:'If you already paid, tap the "I have Paid" button instead. Cancelling may release your order.',ok:'Cancel payment',danger:true,icon:'x'}))return;
+  const r=await api('/api/checkout/cancel',{juspay_order_id:jp});
+  if(r&&r.ok){toast('Payment cancelled','info');closeSheet();renderAccount()}
+  else toast(friendly(r?.error)||'Could not cancel','err');
+}
+</script>
+</body>
+</html>
